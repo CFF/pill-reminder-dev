@@ -193,7 +193,6 @@ const IconArchive=()=><svg width="14" height="14" viewBox="0 0 24 24" fill="none
 const IconChevron=()=><svg width="7" height="13" viewBox="0 0 7 13" fill="none"><polyline points="1 1 6 6.5 1 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>;
 const IconTabToday=({active})=><svg width="24" height="24" viewBox="0 0 24 24" fill="none"><rect x="3" y="4" width="18" height="17" rx="3" stroke="currentColor" strokeWidth={active?"2":"1.7"} fill="none"/><line x1="3" y1="9" x2="21" y2="9" stroke="currentColor" strokeWidth={active?"2":"1.7"}/><line x1="8" y1="2" x2="8" y2="6" stroke="currentColor" strokeWidth={active?"2":"1.7"} strokeLinecap="round"/><line x1="16" y1="2" x2="16" y2="6" stroke="currentColor" strokeWidth={active?"2":"1.7"} strokeLinecap="round"/>{active&&<rect x="7" y="13" width="4" height="4" rx="1" fill="currentColor"/>}</svg>;
 const IconTabHistory=({active})=><svg width="24" height="24" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth={active?"2":"1.7"}/><polyline points="12 7 12 12 15.5 14.5" stroke="currentColor" strokeWidth={active?"2":"1.7"} strokeLinecap="round" strokeLinejoin="round"/></svg>;
-const IconTabNurse=({active})=><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={active?"2":"1.7"} strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M12 11V7"/><circle cx="12" cy="5" r="2"/><circle cx="8.5" cy="15" r="1" fill="currentColor" stroke="none"/><circle cx="15.5" cy="15" r="1" fill="currentColor" stroke="none"/><path d="M9 19h6"/><path d="M3 15H1M23 15h-2"/></svg>;
 const IconTabSettings=({active})=><svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" stroke="currentColor" strokeWidth={active?"2":"1.7"}/><circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth={active?"2":"1.7"}/></svg>;
 function IconClipboardList({size=20}){return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="8" y="2" width="8" height="4" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M9 12h6M9 16h4"/></svg>;}
 
@@ -419,10 +418,10 @@ function timingLabel(pill,session){
 async function archiveExpired(pillList){
   const today=todayStr();const toArchive={morning:[],lunch:[],evening:[]},remaining={morning:[],lunch:[],evening:[]};let changed=false;
   for(const session of["morning","lunch","evening"]){for(const pill of(pillList[session]||[])){if(pill.durationDays!=null&&pill.startDate){const endDate=addDays(pill.startDate,pill.durationDays);if(today>=endDate){toArchive[session].push({...pill,archivedOn:today,endDate});changed=true;continue;}}remaining[session].push(pill);}}
-  if(!changed)return pillList;
+  if(!changed)return{list:pillList,changed:false};
   const existing=await sbGet(ARCHIVED_KEY)||{morning:[],lunch:[],evening:[]};
   await sbSet(ARCHIVED_KEY,{morning:[...existing.morning,...toArchive.morning],lunch:[...existing.lunch||[],...toArchive.lunch],evening:[...existing.evening||[],...toArchive.evening]});
-  await sbSet(PILL_LIST_KEY,remaining);return remaining;
+  const newList={...remaining,as_needed:pillList.as_needed||[]};await sbSet(PILL_LIST_KEY,newList);return{list:newList,changed:true};
 }
 
 function buildActivePillsForDate(date,pillList,archived){
@@ -598,13 +597,17 @@ function HealthAssistant({pillList,profile,onClose}){
   );
 }
 
+const IconTabNurse=({active})=><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={active?"2":"1.7"} strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M12 11V7"/><circle cx="12" cy="5" r="2"/><circle cx="8.5" cy="15" r="1" fill="currentColor" stroke="none"/><circle cx="15.5" cy="15" r="1" fill="currentColor" stroke="none"/><path d="M9 19h6"/><path d="M3 15H1M23 15h-2"/></svg>;
 const TABS=[{key:"today",label:"Today",Icon:IconTabToday},{key:"history",label:"History",Icon:IconTabHistory},{key:"nurse",label:"Nurse",Icon:IconTabNurse},{key:"settings",label:"Settings",Icon:IconTabSettings}];
 
-function TabBar({view,setView,setSelectedDay}){
+function TabBar({view,setView,setSelectedDay,hasNewTips}){
   return(<div style={{position:"fixed",bottom:0,left:0,right:0,zIndex:500,background:"var(--card)",borderTop:"0.5px solid var(--sep)",display:"flex",paddingBottom:"env(safe-area-inset-bottom,16px)",boxShadow:"0 -1px 12px rgba(0,0,0,0.07)"}}>
     {TABS.map(({key,label,Icon})=>{const active=view===key;return(
       <button key={key} onClick={()=>{setView(key);setSelectedDay(null);}} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:4,padding:"10px 0 6px",background:"transparent",border:"none",cursor:"pointer",color:active?"var(--acc)":"var(--t3)",transition:"color 0.15s"}}>
-        <Icon active={active}/>
+        <div style={{position:"relative",display:"inline-flex"}}>
+          <Icon active={active}/>
+          {key==="today"&&hasNewTips&&<div style={{position:"absolute",top:-1,right:-4,width:7,height:7,borderRadius:"50%",background:"var(--acc)",border:"1.5px solid var(--card)"}}/>}
+        </div>
         <span style={{fontSize:11,fontWeight:active?700:500,letterSpacing:"0.04em",textTransform:"uppercase"}}>{label}</span>
       </button>
     );})}
@@ -631,7 +634,7 @@ function HistoryView({view,setView,selectedDay,setSelectedDay,history,setHistory
 
   return(<div style={{minHeight:"100vh",background:"var(--bg)",paddingBottom:"calc(90px + env(safe-area-inset-bottom,0px))"}} className="fade-up">
     <div style={{maxWidth:480,margin:"0 auto"}}>
-      <div style={{background:"var(--card)",borderRadius:"0 0 24px 24px",boxShadow:"var(--shadow-md)",marginBottom:6,paddingTop:"calc(env(safe-area-inset-top,20px) + 16px)",paddingBottom:18,paddingLeft:20,paddingRight:20,backgroundImage:"radial-gradient(ellipse at 110% -10%, var(--acc-glow) 0%, transparent 60%)"}}>
+      <div style={{background:"var(--card)",borderRadius:"0 0 24px 24px",boxShadow:"var(--shadow-md)",marginBottom:6,paddingTop:"calc(env(safe-area-inset-top,20px) + 20px)",paddingBottom:18,paddingLeft:20,paddingRight:20,backgroundImage:"radial-gradient(ellipse at 110% -10%, var(--acc-glow) 0%, transparent 60%)"}}>
         {selectedDay?(()=>{const{weekday,date}=formatDayHeader(selectedDay);return(<>
           <button onClick={()=>setSelectedDay(null)} style={{display:"flex",alignItems:"center",gap:6,padding:"0",marginBottom:14,background:"transparent",color:"var(--blue)",fontSize:16,fontWeight:500}}><IconBack/> History</button>
           <div style={{fontSize:13,color:"var(--t2)",fontWeight:500,letterSpacing:"0.06em",textTransform:"uppercase",marginBottom:4}}>{weekday}</div>
@@ -751,6 +754,14 @@ function SettingsView({profile,setProfile,pillList,archived,setPillList,setArchi
         <div style={{marginBottom:28}}>
           <div style={{fontSize:12,fontWeight:600,color:"var(--t3)",textTransform:"uppercase",letterSpacing:"0.07em",marginBottom:10}}>Data</div>
           <div style={{background:"var(--card)",borderRadius:16,overflow:"hidden",boxShadow:"var(--shadow-sm)"}}>
+            <button onClick={async()=>{
+              const days=await sbGetAllDayKeys("pr:day:");
+              const logs={};for(const r of days)logs[r.key.replace("pr:day:","")]=r.value;
+              const data={pillList,archived,logs,profile,exportedAt:new Date().toISOString()};
+              const blob=new Blob([JSON.stringify(data,null,2)],{type:"application/json"});
+              const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download="posology-backup.json";a.click();URL.revokeObjectURL(url);
+            }} style={{width:"100%",display:"flex",alignItems:"center",justifyContent:"space-between",padding:"15px 16px",background:"transparent",color:"var(--t1)",fontSize:15,fontWeight:500,textAlign:"left"}}>Create backup<span style={{fontSize:13,color:"var(--blue)"}}>Download JSON</span></button>
+            <div style={{height:"0.5px",background:"var(--sep)"}}/>
             <button onClick={()=>fileInputRef.current?.click()} style={{width:"100%",display:"flex",alignItems:"center",justifyContent:"space-between",padding:"15px 16px",background:"transparent",color:"var(--t1)",fontSize:15,fontWeight:500,textAlign:"left"}}>Import backup<span style={{fontSize:13,color:"var(--blue)"}}>Choose JSON</span></button>
             <input ref={fileInputRef} type="file" accept=".json" style={{display:"none"}} onChange={async e=>{
               const file=e.target.files?.[0];if(!file)return;
@@ -779,7 +790,7 @@ function SettingsView({profile,setProfile,pillList,archived,setPillList,setArchi
           <div style={{background:"var(--card)",borderRadius:16,overflow:"hidden",boxShadow:"var(--shadow-sm)"}}>
             <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"13px 16px"}}><span style={{fontSize:15,color:"var(--t2)"}}>App</span><span style={{fontSize:15,color:"var(--t1)",fontWeight:500}}>Posology</span></div>
             <div style={{height:"0.5px",background:"var(--sep)"}}/>
-            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"13px 16px"}}><span style={{fontSize:15,color:"var(--t2)"}}>Version</span><span style={{fontSize:15,color:"var(--t1)",fontWeight:500}}>pr-v74</span></div>
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"13px 16px"}}><span style={{fontSize:15,color:"var(--t2)"}}>Version</span><span style={{fontSize:15,color:"var(--t1)",fontWeight:500}}>pr-v87</span></div>
             <div style={{height:"0.5px",background:"var(--sep)"}}/>
             <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"13px 16px"}}><span style={{fontSize:15,color:"var(--t2)"}}>Storage</span><span style={{fontSize:15,color:"var(--t1)",fontWeight:500}}>Supabase</span></div>
           </div>
@@ -792,13 +803,21 @@ function SettingsView({profile,setProfile,pillList,archived,setPillList,setArchi
 
 // ── No-token screen ───────────────────────────────────────────────
 function NoTokenView(){
+  const [val,setVal]=React.useState("");
+  function go(){
+    const t=val.trim();
+    if(!t)return;
+    window.location.href=window.location.pathname+"?u="+encodeURIComponent(t);
+  }
   return(<div style={{minHeight:"100vh",background:"var(--bg)",display:"flex",alignItems:"center",justifyContent:"center",padding:32}}>
-    <div style={{background:"var(--card)",borderRadius:20,padding:28,boxShadow:"var(--shadow-lg)",textAlign:"center",maxWidth:340}}>
+    <div style={{background:"var(--card)",borderRadius:20,padding:28,boxShadow:"var(--shadow-lg)",textAlign:"center",maxWidth:340,width:"100%"}}>
       <div style={{width:56,height:56,borderRadius:16,background:"var(--acc-soft)",display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 16px",color:"var(--acc)"}}>
         <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
       </div>
       <div style={{fontSize:20,fontWeight:700,color:"var(--t1)",marginBottom:8}}>Access required</div>
-      <div style={{fontSize:15,color:"var(--t2)",lineHeight:1.6}}>Open the link you received to access your Pill Reminder. The link looks like:<br/><br/><span style={{fontFamily:"monospace",fontSize:13,color:"var(--acc)"}}>pill-reminder/?u=yourtoken</span></div>
+      <div style={{fontSize:14,color:"var(--t2)",lineHeight:1.6,marginBottom:20}}>Enter your access token to continue.</div>
+      <input value={val} onChange={e=>setVal(e.target.value)} onKeyDown={e=>e.key==="Enter"&&go()} placeholder="Your token" style={{width:"100%",boxSizing:"border-box",padding:"12px 14px",borderRadius:12,border:"1.5px solid var(--sep-strong)",background:"var(--bg)",color:"var(--t1)",fontSize:16,outline:"none",marginBottom:12,fontFamily:"inherit"}}/>
+      <button onClick={go} style={{width:"100%",padding:"13px",borderRadius:12,background:"var(--acc)",color:"#fff",fontSize:16,fontWeight:600,border:"none",cursor:"pointer"}}>Continue</button>
     </div>
   </div>);
 }
@@ -813,13 +832,67 @@ function App(){
   const [flash,setFlash]=useState(null);
   const [aiTips,setAiTips]=useState(null);
   const [tipsLoading,setTipsLoading]=useState(false);
+  const [hasNewTips,setHasNewTips]=useState(false);
+  const [newTipLabels,setNewTipLabels]=useState(()=>{try{return new Set(JSON.parse(localStorage.getItem("pr:newTipLabels")||"[]"));}catch{return new Set();}});
+  const tipCardRefs=React.useRef({});
+  const tipsRef=React.useRef(null);
+  async function forceRefreshTips(){
+    setAiTips(null);
+    setTipsLoading(true);
+    const allPills=[...(pillList.morning||[]),...(pillList.lunch||[]),...(pillList.evening||[]),...(pillList.as_needed||[])];
+    if(allPills.length===0){setTipsLoading(false);return;}
+    const pillsDesc=allPills.map(p=>{const doseStr=p.dosageAmt&&p.dosageUnit?`${p.dosageAmt}${p.dosageUnit}`:p.dose||"";return`- ${p.name}${doseStr?` (${doseStr})`:""}`+(p.asNeeded?" [as needed]":"")+(p.maxDailyDose?` max ${p.maxDailyDose}x/day`:"");}).join("\n");
+    const hashKey="pr:tips:"+btoa(unescape(encodeURIComponent(pillsDesc))).slice(0,40);
+    try{
+      const res=await fetch(`${SUPA_URL}/functions/v1/get-tips`,{method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer "+SUPA_KEY},body:JSON.stringify({pillsDesc})});
+      const tips=await res.json();
+      if(Array.isArray(tips)){setAiTips(tips);await sbSet(hashKey,tips);const seenRaw=JSON.parse(localStorage.getItem("pr:seenTipLabels")||"[]");const newLabels=tips.map(t=>t.label).filter(l=>!seenRaw.includes(l));if(newLabels.length>0){setNewTipLabels(new Set(newLabels));setHasNewTips(true);}}
+    }catch(e){console.error(e);}
+    setTipsLoading(false);
+  }
+  React.useEffect(()=>{
+    if(newTipLabels.size===0)return;
+    const observers=[];
+    function markSeen(label){
+      setNewTipLabels(prev=>{
+        const next=new Set(prev);
+        next.delete(label);
+        const seenRaw=JSON.parse(localStorage.getItem("pr:seenTipLabels")||"[]");
+        if(!seenRaw.includes(label))seenRaw.push(label);
+        localStorage.setItem("pr:seenTipLabels",JSON.stringify(seenRaw));
+        if(next.size===0)setHasNewTips(false);
+        return next;
+      });
+    }
+    function markAllSeen(){
+      const seenRaw=JSON.parse(localStorage.getItem("pr:seenTipLabels")||"[]");
+      for(const label of newTipLabels){if(!seenRaw.includes(label))seenRaw.push(label);}
+      localStorage.setItem("pr:seenTipLabels",JSON.stringify(seenRaw));
+      setNewTipLabels(new Set());
+      setHasNewTips(false);
+    }
+    for(const label of newTipLabels){
+      const el=tipCardRefs.current[label];
+      if(!el)continue;
+      const obs=new IntersectionObserver(([e])=>{
+        if(e.isIntersecting){obs.disconnect();markSeen(label);}
+      },{threshold:0.5});
+      obs.observe(el);
+      observers.push(obs);
+    }
+    function onScroll(){
+      const nearBottom=window.scrollY+window.innerHeight>=document.documentElement.scrollHeight-60;
+      if(nearBottom)markAllSeen();
+    }
+    window.addEventListener("scroll",onScroll,{passive:true});
+    return()=>{observers.forEach(o=>o.disconnect());window.removeEventListener("scroll",onScroll);};
+  },[newTipLabels]);
   const [loading,setLoading]=useState(true);
   const [selectedDay,setSelectedDay]=useState(null);
   const [installPrompt,setInstallPrompt]=useState(null);
   const [installed,setInstalled]=useState(false);
   const [detailSheet,setDetailSheet]=useState(null);
   const [addSheet,setAddSheet]=useState(null);
-  const [showHealthAssistant,setShowHealthAssistant]=useState(false);
   const [profile,setProfile]=useState({name:"",age:"",weight:"",height:""});
   const [now,setNow]=useState(Date.now());
   const fileInputRef=useRef(null);
@@ -834,9 +907,10 @@ function App(){
       if(list.night&&!list.evening){list={...list,evening:list.night,lunch:list.lunch||[]};delete list.night;}
       if(!list.lunch)list={...list,lunch:[]};
       if(!list.as_needed)list={...list,as_needed:[]};
-      list=await archiveExpired(list);
+      const archResult=await archiveExpired(list);list=archResult.list;
       for(const sess of["morning","lunch","evening"]){list[sess]=(list[sess]||[]).map(p=>{if(p.schedules)return p;const sessions=p.sessions||(p.session&&p.session!=="as_needed"?[p.session]:[sess]);const timings=p.timings||(p.timing?[p.timing]:[]);return{...p,schedules:sessions.map((s,i)=>({session:s,timing:timings[i]||""})),sessions};});}
       setPillList(list);
+      if(archResult.changed){setAiTips(null);}
       generateTips(list);
       const arch=await sbGet(ARCHIVED_KEY)||{morning:[],lunch:[],evening:[]};
       if(arch.night&&!arch.evening){arch.evening=arch.night;delete arch.night;}if(!arch.lunch)arch.lunch=[];
@@ -845,8 +919,16 @@ function App(){
       const today=todayStr();let log=await sbGet(dayKey(today));
       if(!log){log=buildEmptyLog(list);await sbSet(dayKey(today),log);}
       setTodayLog(log);
-      const ts=await sbGet(asNeededDayKey(today))||{};
-      setAsNeededTs(ts);
+      const tsToday=await sbGet(asNeededDayKey(today))||{};
+      const yesterday=addDays(today,-1);
+      const tsYesterday=await sbGet(asNeededDayKey(yesterday))||{};
+      const cutoff=Date.now()-24*3600000;
+      const tsMerged={...tsToday};
+      for(const[id,arr] of Object.entries(tsYesterday)){
+        const recent=(arr||[]).filter(t=>t>cutoff);
+        if(recent.length>0)tsMerged[id]=[...recent,...(tsMerged[id]||[])].sort((a,b)=>a-b);
+      }
+      setAsNeededTs(tsMerged);
       setLoading(false);
     })();
   },[]);
@@ -884,7 +966,7 @@ function App(){
     const hashKey="pr:tips:"+btoa(unescape(encodeURIComponent(pillsDesc))).slice(0,40);
     try{
       const cached=await sbGet(hashKey);
-      if(cached&&Array.isArray(cached)){setAiTips(cached);return;}
+      if(cached&&Array.isArray(cached)){const activeNames=allPills.map(p=>p.name.toLowerCase());const filtered=cached.filter(t=>t.label.toLowerCase()==="interactions"||activeNames.some(n=>t.label.toLowerCase().includes(n)||n.includes(t.label.toLowerCase())));if(filtered.length!==cached.length){await sbSet(hashKey,filtered);}setAiTips(filtered);const seenRaw=JSON.parse(localStorage.getItem("pr:seenTipLabels")||"[]");const newLabels=filtered.map(t=>t.label).filter(l=>!seenRaw.includes(l));if(newLabels.length>0){setNewTipLabels(new Set(newLabels));setHasNewTips(true);}else{setHasNewTips(false);}setTipsLoading(false);return;}
     }catch{}
     setTipsLoading(true);
     try{
@@ -896,6 +978,7 @@ function App(){
       const tips=await res.json();
       if(Array.isArray(tips)){
         setAiTips(tips);
+        const seenRaw=JSON.parse(localStorage.getItem("pr:seenTipLabels")||"[]");const newLabels=tips.map(t=>t.label).filter(l=>!seenRaw.includes(l));if(newLabels.length>0){setNewTipLabels(new Set(newLabels));setHasNewTips(true);}else{setHasNewTips(false);}
         await sbSet(hashKey,tips);
       }
     }catch(e){console.error("Tips error",e);setAiTips([]);}
@@ -913,6 +996,7 @@ function App(){
     for(const s of sessList){if(s!=="as_needed")newLog={...newLog,[s]:{...newLog[s],[id]:false}};}
     setPillList(newList);setTodayLog(newLog);
     await sbSet(PILL_LIST_KEY,newList);await sbSet(dayKey(todayStr()),newLog);
+    setTipsLoading(true);
     setAddSheet(null);
     generateTips(newList);
   }
@@ -954,16 +1038,16 @@ function App(){
 
   if(loading)return(<div style={{minHeight:"100vh",background:"var(--bg)",display:"flex",alignItems:"center",justifyContent:"center"}}><div style={{color:"var(--t2)",fontSize:14}}>Loading…</div></div>);
   if(!USER_TOKEN)return <NoTokenView/>;
-  if(view==="history")return(<><HistoryView view={view} setView={setView} selectedDay={selectedDay} setSelectedDay={setSelectedDay} history={history} setHistory={setHistory} pillList={pillList} archived={archived} sessions={sessions} toggleHistoryTaken={toggleHistoryTaken}/><TabBar view={view} setView={setView} setSelectedDay={setSelectedDay}/></>);
-  if(view==="settings")return(<><SettingsView view={view} setView={setView} setSelectedDay={setSelectedDay} profile={profile} setProfile={setProfile} pillList={pillList} archived={archived} setPillList={setPillList} setArchived={setArchived} fileInputRef={fileInputRef}/><TabBar view={view} setView={setView} setSelectedDay={setSelectedDay}/></>);
-  if(view==="nurse")return(<><HealthAssistant pillList={pillList} profile={profile}/><TabBar view={view} setView={setView} setSelectedDay={setSelectedDay}/></>);
+  if(view==="history")return(<><HistoryView view={view} setView={setView} selectedDay={selectedDay} setSelectedDay={setSelectedDay} history={history} setHistory={setHistory} pillList={pillList} archived={archived} sessions={sessions} toggleHistoryTaken={toggleHistoryTaken}/><TabBar view={view} setView={setView} setSelectedDay={setSelectedDay} hasNewTips={false}/></>);
+  if(view==="settings")return(<><SettingsView view={view} setView={setView} setSelectedDay={setSelectedDay} profile={profile} setProfile={setProfile} pillList={pillList} archived={archived} setPillList={setPillList} setArchived={setArchived} fileInputRef={fileInputRef}/><TabBar view={view} setView={setView} setSelectedDay={setSelectedDay} hasNewTips={false}/></>);
+  if(view==="nurse")return(<><HealthAssistant pillList={pillList} profile={profile}/><TabBar view={view} setView={setView} setSelectedDay={setSelectedDay} hasNewTips={false}/></>);
 
   const total=sessions.reduce((s,{key})=>s+getPillsForSession(pillList,key).length,0);
   const taken=sessions.reduce((s,{key})=>{const p=getPillsForSession(pillList,key),l=todayLog[key]||{};return s+p.filter(x=>l[x.id]).length;},0);
   const pct=total?taken/total:0,R=33,C=2*Math.PI*R,ringCol=pct===1?"var(--green)":"var(--acc)";
 
   return(<>
-    <div style={{minHeight:"100vh",background:"var(--bg)",paddingBottom:"calc(90px + env(safe-area-inset-bottom,0px))"}} className="fade-up">
+    <div style={{minHeight:"100vh",background:"var(--bg)",paddingBottom:"calc(90px + env(safe-area-inset-bottom,0px))"}} className="fade-up today-scroll">
       <div style={{maxWidth:480,margin:"0 auto"}}>
         <div style={{background:"var(--card)",borderRadius:"0 0 24px 24px",boxShadow:"var(--shadow-md)",marginBottom:6,paddingTop:"calc(env(safe-area-inset-top,20px) + 20px)",paddingBottom:18,paddingLeft:20,paddingRight:20,backgroundImage:"radial-gradient(ellipse at 110% -10%, var(--acc-glow) 0%, transparent 60%)"}}>
           <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:12}}>
@@ -1075,10 +1159,16 @@ function App(){
           {(()=>{
             const colorMap={orange:"var(--acc)",blue:"var(--blue)",green:"var(--green)",red:"var(--red)",purple:"var(--violet)"};
             return(<div style={{marginTop:28}}>
-              <div style={{marginBottom:14,display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+              <div ref={tipsRef} style={{marginBottom:14,display:"flex",alignItems:"center",justifyContent:"space-between"}}>
                 <div className="serif" style={{fontSize:26,fontWeight:400,color:"var(--t1)",letterSpacing:"-0.01em",lineHeight:1.1}}>Recommendations</div>
-                {tipsLoading&&<div style={{width:14,height:14,border:"2px solid var(--sep)",borderTopColor:"var(--acc)",borderRadius:"50%",animation:"spin 0.8s linear infinite"}}/>}
+                <button onClick={forceRefreshTips} disabled={tipsLoading} style={{background:"none",border:"none",cursor:tipsLoading?"default":"pointer",color:"var(--t3)",padding:4,display:"flex",alignItems:"center",opacity:tipsLoading?0.4:1}}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg></button>
               </div>
+              {tipsLoading&&(
+                <div style={{background:"var(--card)",borderRadius:14,padding:"18px 16px",marginBottom:12,display:"flex",alignItems:"center",gap:12,boxShadow:"0 1px 3px rgba(0,0,0,0.07)"}}>
+                  <div style={{width:18,height:18,flexShrink:0,border:"2.5px solid var(--sep)",borderTopColor:"var(--acc)",borderRadius:"50%",animation:"spin 0.8s linear infinite"}}/>
+                  <span style={{fontSize:14,color:"var(--t2)",fontWeight:500}}>Generating personalized recommendations…</span>
+                </div>
+              )}
               {!tipsLoading&&(!aiTips||aiTips.length===0)?(
                 <div style={{background:"var(--card)",borderRadius:16,boxShadow:"0 1px 4px rgba(0,0,0,0.08)",padding:"32px 24px",display:"flex",flexDirection:"column",alignItems:"center",gap:16,textAlign:"center"}}>
                   <div style={{width:52,height:52,borderRadius:14,background:"var(--acc-soft)",display:"flex",alignItems:"center",justifyContent:"center",color:"var(--acc)"}}><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/></svg></div>
@@ -1086,25 +1176,26 @@ function App(){
                 </div>
               ):(aiTips||[]).map((tip,ti)=>{
                 const col=colorMap[tip.colorKey]||"var(--acc)";
+                const isNew=newTipLabels.has(tip.label);
                 return(
-                <div key={ti} style={{background:"var(--card)",borderRadius:14,overflow:"hidden",marginBottom:12,boxShadow:"0 1px 3px rgba(0,0,0,0.07)"}}>
+                <div key={ti} ref={el=>{if(el)tipCardRefs.current[tip.label]=el;else delete tipCardRefs.current[tip.label];}} style={{background:"var(--card)",borderRadius:14,overflow:"hidden",marginBottom:12,boxShadow:isNew?"0 1px 8px rgba(0,102,232,0.15)":"0 1px 3px rgba(0,0,0,0.07)",transition:"box-shadow 0.3s"}}>
                   <div style={{display:"flex",alignItems:"center",gap:10,padding:"13px 16px",borderBottom:"0.5px solid var(--sep-strong)"}}>
-                    <div style={{width:8,height:8,borderRadius:"50%",background:col,flexShrink:0}}/>
-                    <span style={{fontSize:15,fontWeight:600,color:"var(--t1)"}}>{tip.label}</span>
+                    <span style={{fontSize:15,fontWeight:600,color:"var(--t1)",flex:1}}>{tip.label}</span>
+                    {isNew&&<span style={{fontSize:11,fontWeight:700,color:"var(--blue)",background:"rgba(0,102,232,0.1)",borderRadius:6,padding:"2px 7px",letterSpacing:"0.04em",textTransform:"uppercase"}}>New</span>}
                   </div>
-                  {(tip.points||[]).map((pt,i)=>(<div key={i} style={{position:"relative"}}>{i>0&&<div style={{position:"absolute",top:0,left:16,right:0,height:"0.5px",background:"var(--sep-strong)"}}/>}<div style={{display:"flex",alignItems:"flex-start",gap:12,padding:"12px 16px"}}><span style={{flexShrink:0,display:"flex",alignItems:"center",color:col,marginTop:2}}><TipIcon name={pt.icon} size={18}/></span><p style={{margin:0,fontSize:14,lineHeight:1.6,color:"var(--t2)",fontWeight:500}}>{pt.text}</p></div></div>))}
+                  {(tip.points||[]).map((pt,i)=>(<div key={i} style={{position:"relative"}}>{i>0&&<div style={{position:"absolute",top:0,left:16,right:0,height:"0.5px",background:"var(--sep-strong)"}}/>}<div style={{display:"flex",alignItems:"flex-start",gap:12,padding:"12px 16px"}}><span style={{flexShrink:0,display:"flex",alignItems:"center",color:"var(--t2)",marginTop:2}}><TipIcon name={pt.icon} size={18}/></span><p style={{margin:0,fontSize:14,lineHeight:1.6,color:"var(--t2)",fontWeight:500}}>{pt.text}</p></div></div>))}
                   <div style={{padding:"10px 16px",borderTop:"0.5px solid var(--sep)"}}><p style={{margin:0,fontSize:11,color:"var(--t3)",fontStyle:"italic"}}>Always follow your doctor's instructions. This is general information only.</p></div>
                 </div>
               );})}
             </div>);
           })()}
           <div style={{textAlign:"center",fontSize:12,color:"var(--t3)",paddingTop:16,paddingBottom:12,letterSpacing:"0.02em"}} className="safe-bottom">Synced to cloud · Resets at midnight</div>
-
         </div>
       </div>
     </div>
 
-    <TabBar view={view} setView={setView} setSelectedDay={setSelectedDay}/>
+    {(hasNewTips||tipsLoading)&&(()=>{const ready=hasNewTips&&!tipsLoading;return(<button onClick={ready?()=>{const firstNewLabel=[...newTipLabels][0];const el=firstNewLabel&&tipCardRefs.current[firstNewLabel];(el||tipsRef.current)&&(el||tipsRef.current).scrollIntoView({behavior:"smooth",block:"center"});}:null} style={{position:"fixed",bottom:"calc(80px + env(safe-area-inset-bottom,0px))",left:"50%",transform:"translateX(-50%)",zIndex:490,background:ready?"var(--acc)":"#888",color:"#fff",border:"none",borderRadius:20,padding:"9px 18px",fontSize:13,fontWeight:600,boxShadow:ready?"0 4px 16px rgba(200,121,65,0.35)":"0 4px 16px rgba(0,0,0,0.2)",cursor:ready?"pointer":"default",display:"flex",alignItems:"center",gap:6,whiteSpace:"nowrap",transition:"background 0.3s"}}>{ready?<span>↓</span>:<div style={{width:13,height:13,border:"2px solid rgba(255,255,255,0.4)",borderTopColor:"#fff",borderRadius:"50%",animation:"spin 0.8s linear infinite",flexShrink:0}}/>}<span>New recommendations</span></button>);})()}
+    <TabBar view={view} setView={setView} setSelectedDay={setSelectedDay} hasNewTips={hasNewTips}/>
 
     {addSheet&&(<BottomSheet onClose={()=>setAddSheet(null)}>
       <div style={{padding:"4px 20px 12px"}}><div style={{fontSize:18,fontWeight:700,color:"var(--t1)"}}>Add medication</div></div>
@@ -1196,7 +1287,6 @@ function App(){
         />
       </div>
     </BottomSheet>)}
-
   </>);
 }
 
@@ -1204,7 +1294,7 @@ ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
 </script>
 <script>
 if("serviceWorker"in navigator){
-  const sw='const C="pr-v74",A=[self.location.pathname];self.addEventListener("install",e=>{e.waitUntil(caches.open(C).then(c=>c.addAll(A)));self.skipWaiting();});self.addEventListener("activate",e=>{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==C).map(k=>caches.delete(k)))));self.clients.claim();});self.addEventListener("fetch",e=>{if(e.request.url.includes("supabase.co")){e.respondWith(fetch(e.request));return;}e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request).then(res=>{const cl=res.clone();caches.open(C).then(c=>c.put(e.request,cl));return res;})));});';
+  const sw='const C="pr-v87",A=[self.location.pathname];self.addEventListener("install",e=>{e.waitUntil(caches.open(C).then(c=>c.addAll(A)));self.skipWaiting();});self.addEventListener("activate",e=>{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==C).map(k=>caches.delete(k)))));self.clients.claim();});self.addEventListener("fetch",e=>{if(e.request.url.includes("supabase.co")){e.respondWith(fetch(e.request));return;}e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request).then(res=>{const cl=res.clone();caches.open(C).then(c=>c.put(e.request,cl));return res;})));});';
   navigator.serviceWorker.register(URL.createObjectURL(new Blob([sw],{type:"application/javascript"})),{scope:"./"}).catch(e=>console.warn(e));
 }
 </script>
