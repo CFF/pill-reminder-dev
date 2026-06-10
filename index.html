@@ -467,16 +467,21 @@ function HealthAssistant({pillList,profile,onClose}){
   const [input,setInput]=React.useState("");
   const [loading,setLoading]=React.useState(false);
   const [viewH,setViewH]=React.useState(window.visualViewport?window.visualViewport.height:window.innerHeight);
+  const [tabH,setTabH]=React.useState(56);
   const bottomRef=React.useRef(null);
   const inputRef=React.useRef(null);
 
   React.useEffect(()=>{
     const vv=window.visualViewport;
-    if(!vv)return;
-    const update=()=>setViewH(vv.height);
-    vv.addEventListener("resize",update);
-    vv.addEventListener("scroll",update);
-    return()=>{vv.removeEventListener("resize",update);vv.removeEventListener("scroll",update);};
+    const updateH=()=>{
+      setViewH(vv?vv.height:window.innerHeight);
+      const tb=document.getElementById("main-tabbar");
+      if(tb)setTabH(tb.offsetHeight);
+    };
+    updateH();
+    if(vv){vv.addEventListener("resize",updateH);vv.addEventListener("scroll",updateH);}
+    window.addEventListener("resize",updateH);
+    return()=>{if(vv){vv.removeEventListener("resize",updateH);vv.removeEventListener("scroll",updateH);}window.removeEventListener("resize",updateH);};
   },[]);
 
   const allPills=[...(pillList.morning||[]),...(pillList.lunch||[]),...(pillList.evening||[]),...(pillList.as_needed||[])];
@@ -522,7 +527,7 @@ function HealthAssistant({pillList,profile,onClose}){
   );
 
   return(
-    <div style={{display:"flex",flexDirection:"column",height:(viewH-56)+"px",background:"var(--bg)"}}>
+    <div style={{display:"flex",flexDirection:"column",height:(viewH-tabH)+"px",background:"var(--bg)"}}>
       <div style={{flexShrink:0,background:"var(--card)",borderBottom:"0.5px solid var(--sep)",paddingTop:"calc(env(safe-area-inset-top,20px) + 12px)"}}>
         <div style={{padding:"0 20px 12px",display:"flex",alignItems:"center",gap:12}}>
           <div style={{width:40,height:40,borderRadius:12,background:"var(--acc-soft)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
@@ -601,7 +606,7 @@ const IconTabNurse=({active})=><svg width="24" height="24" viewBox="0 0 24 24" f
 const TABS=[{key:"today",label:"Today",Icon:IconTabToday},{key:"history",label:"History",Icon:IconTabHistory},{key:"nurse",label:"Nurse",Icon:IconTabNurse},{key:"settings",label:"Settings",Icon:IconTabSettings}];
 
 function TabBar({view,setView,setSelectedDay,hasNewTips}){
-  return(<div style={{position:"fixed",bottom:0,left:0,right:0,zIndex:500,background:"var(--card)",borderTop:"0.5px solid var(--sep)",display:"flex",paddingBottom:"env(safe-area-inset-bottom,16px)",boxShadow:"0 -1px 12px rgba(0,0,0,0.07)"}}>
+  return(<div id="main-tabbar" style={{position:"fixed",bottom:0,left:0,right:0,zIndex:500,background:"var(--card)",borderTop:"0.5px solid var(--sep)",display:"flex",paddingBottom:"env(safe-area-inset-bottom,16px)",boxShadow:"0 -1px 12px rgba(0,0,0,0.07)"}}>
     {TABS.map(({key,label,Icon})=>{const active=view===key;return(
       <button key={key} onClick={()=>{setView(key);setSelectedDay(null);}} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:4,padding:"10px 0 6px",background:"transparent",border:"none",cursor:"pointer",color:active?"var(--acc)":"var(--t3)",transition:"color 0.15s"}}>
         <div style={{position:"relative",display:"inline-flex"}}>
@@ -790,7 +795,7 @@ function SettingsView({profile,setProfile,pillList,archived,setPillList,setArchi
           <div style={{background:"var(--card)",borderRadius:16,overflow:"hidden",boxShadow:"var(--shadow-sm)"}}>
             <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"13px 16px"}}><span style={{fontSize:15,color:"var(--t2)"}}>App</span><span style={{fontSize:15,color:"var(--t1)",fontWeight:500}}>Posology</span></div>
             <div style={{height:"0.5px",background:"var(--sep)"}}/>
-            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"13px 16px"}}><span style={{fontSize:15,color:"var(--t2)"}}>Version</span><span style={{fontSize:15,color:"var(--t1)",fontWeight:500}}>pr-v87</span></div>
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"13px 16px"}}><span style={{fontSize:15,color:"var(--t2)"}}>Version</span><span style={{fontSize:15,color:"var(--t1)",fontWeight:500}}>pr-v88</span></div>
             <div style={{height:"0.5px",background:"var(--sep)"}}/>
             <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"13px 16px"}}><span style={{fontSize:15,color:"var(--t2)"}}>Storage</span><span style={{fontSize:15,color:"var(--t1)",fontWeight:500}}>Supabase</span></div>
           </div>
@@ -1294,7 +1299,7 @@ ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
 </script>
 <script>
 if("serviceWorker"in navigator){
-  const sw='const C="pr-v87",A=[self.location.pathname];self.addEventListener("install",e=>{e.waitUntil(caches.open(C).then(c=>c.addAll(A)));self.skipWaiting();});self.addEventListener("activate",e=>{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==C).map(k=>caches.delete(k)))));self.clients.claim();});self.addEventListener("fetch",e=>{if(e.request.url.includes("supabase.co")){e.respondWith(fetch(e.request));return;}e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request).then(res=>{const cl=res.clone();caches.open(C).then(c=>c.put(e.request,cl));return res;})));});';
+  const sw='const C="pr-v88",A=[self.location.pathname];self.addEventListener("install",e=>{e.waitUntil(caches.open(C).then(c=>c.addAll(A)));self.skipWaiting();});self.addEventListener("activate",e=>{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==C).map(k=>caches.delete(k)))));self.clients.claim();});self.addEventListener("fetch",e=>{if(e.request.url.includes("supabase.co")){e.respondWith(fetch(e.request));return;}e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request).then(res=>{const cl=res.clone();caches.open(C).then(c=>c.put(e.request,cl));return res;})));});';
   navigator.serviceWorker.register(URL.createObjectURL(new Blob([sw],{type:"application/javascript"})),{scope:"./"}).catch(e=>console.warn(e));
 }
 </script>
