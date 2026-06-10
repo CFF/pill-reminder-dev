@@ -1,0 +1,1215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
+  <meta name="theme-color" id="theme-color-meta" content="#f5efe8" media="(prefers-color-scheme: light)"/>
+  <meta name="theme-color" content="#1c1c1e" media="(prefers-color-scheme: dark)"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+  <meta name="apple-mobile-web-app-title" content="Posology"/>
+  <title>Posology</title>
+  <script>
+    const manifestData={name:"Posology",short_name:"Posology",start_url:"./",display:"standalone",background_color:"#1a1410",theme_color:"#1a1410",orientation:"portrait",icons:[{src:"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='110' fill='%231a1410'/%3E%3Cg transform='translate(256%2C256) rotate(-66)'%3E%3CclipPath id='p'%3E%3Crect x='-130' y='-44' width='260' height='88' rx='44'/%3E%3C/clipPath%3E%3Crect x='-130' y='-44' width='130' height='88' fill='%23faf7f2' clip-path='url(%23p)'/%3E%3Crect x='-130' y='-44' width='260' height='88' rx='44' stroke='%23faf7f2' stroke-width='18' fill='none'/%3E%3Cline x1='0' y1='-44' x2='0' y2='44' stroke='%231a1410' stroke-width='14'/%3E%3C/g%3E%3C/svg%3E",sizes:"any",type:"image/svg+xml",purpose:"any maskable"}]};
+    const bl=new Blob([JSON.stringify(manifestData)],{type:"application/manifest+json"});
+    const ml=document.createElement("link");ml.rel="manifest";ml.href=URL.createObjectURL(bl);document.head.appendChild(ml);
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&display=swap" rel="stylesheet"/>
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+    html,body{height:100%;overscroll-behavior:none;}
+    body{font-family:'DM Sans',system-ui,sans-serif;-webkit-tap-highlight-color:transparent;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;}
+    #root{min-height:100%;}
+    input,button{font-family:'DM Sans',system-ui,sans-serif;}
+    button{cursor:pointer;border:none;outline:none;-webkit-tap-highlight-color:transparent;}
+    input{outline:none;}
+    .safe-bottom{padding-bottom:env(safe-area-inset-bottom,24px);}
+    .serif{font-family:'DM Serif Display',Georgia,serif;}
+    :root{
+      --bg:#f7ede0;--bg2:#e8ddd1;--card:#ffffff;--card2:#faf7f3;
+      --sep:rgba(0,0,0,0.065);--t1:#18181b;--t2:#5c5c66;--t3:rgba(0,0,0,0.28);
+      --acc:#d45500;--acc-soft:rgba(212,85,0,0.10);--acc-glow:rgba(212,85,0,0.22);
+      --blue:#0066e8;--green:#1eb854;--red:#e5342c;
+      --gold:#a34d00;--gold-bg:rgba(163,77,0,0.09);
+      --violet:#6d28d9;--violet-bg:rgba(109,40,217,0.09);
+      --shadow-sm:0 1px 2px rgba(0,0,0,0.07),0 1px 3px rgba(0,0,0,0.05);
+      --shadow-md:0 2px 5px rgba(0,0,0,0.08),0 1px 2px rgba(0,0,0,0.05);
+      --shadow-lg:0 4px 14px rgba(0,0,0,0.10),0 1px 3px rgba(0,0,0,0.06);
+    }
+    @media(prefers-color-scheme:dark){
+      :root{
+        --bg:#161618;--bg2:#232325;--card:#252528;--card2:#2e2e32;
+        --sep:rgba(255,255,255,0.08);--t1:#f0f0f5;--t2:#a0a0ab;--t3:rgba(255,255,255,0.26);
+        --acc:#ff6b1a;--acc-soft:rgba(255,107,26,0.14);--acc-glow:rgba(255,107,26,0.28);
+        --blue:#3b9eff;--green:#2ed15f;--red:#ff4d45;
+        --gold:#f5a623;--gold-bg:rgba(245,166,35,0.12);
+        --violet:#a855f7;--violet-bg:rgba(168,85,247,0.13);
+        --shadow-sm:0 1px 2px rgba(0,0,0,0.30),0 1px 3px rgba(0,0,0,0.20);
+        --shadow-md:0 2px 5px rgba(0,0,0,0.34),0 1px 2px rgba(0,0,0,0.22);
+        --shadow-lg:0 4px 14px rgba(0,0,0,0.42),0 1px 3px rgba(0,0,0,0.24);
+      }
+    }
+    @keyframes splashFade{0%{opacity:1}75%{opacity:1}100%{opacity:0}}
+    #splash{position:fixed;inset:0;z-index:9999;background:#faf7f2;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;animation:splashFade 1.8s ease forwards;pointer-events:none;}
+    #splash.gone{display:none;}
+    @keyframes pop{0%{transform:scale(1)}45%{transform:scale(1.42)}75%{transform:scale(0.92)}100%{transform:scale(1)}}
+    .pop{animation:pop 0.38s cubic-bezier(0.34,1.56,0.64,1);}
+    @keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+    .fade-up{animation:fadeUp 0.3s cubic-bezier(0.22,1,0.36,1) both;}
+    @keyframes pillIn{from{opacity:0;transform:translateY(8px) scale(0.98)}to{opacity:1;transform:translateY(0) scale(1)}}
+    .pill-card{animation:pillIn 0.32s cubic-bezier(0.22,1,0.36,1) both;}
+    @keyframes spin{to{transform:rotate(360deg)}} @keyframes sheetUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+    .ring-fill{transition:stroke-dashoffset 0.8s cubic-bezier(0.4,0,0.2,1);}
+    .row-press:active{background:var(--bg2)!important;transition:none;}
+    .pill-press:active{transform:scale(0.985);transition:transform 0.1s;}
+    .pill-press{transition:transform 0.2s cubic-bezier(0.34,1.56,0.64,1),opacity 0.2s;}
+  </style>
+</head>
+<body style="background:var(--bg)">
+<div id="splash"><div style="display:flex;align-items:flex-end;gap:0;"><span style="font-family:'DM Serif Display',Georgia,serif;font-size:52px;color:#1a1410;letter-spacing:-0.01em;line-height:1;">Posology</span><svg width="28" height="20" viewBox="0 0 28 20" fill="none" xmlns="http://www.w3.org/2000/svg" style="margin-left:-10px;margin-bottom:4px;align-self:flex-end;"><g transform="translate(14,10) rotate(-66)"><clipPath id="pc-sp"><rect x="-9" y="-3" width="18" height="6" rx="3"/></clipPath><rect x="-9" y="-3" width="9" height="6" fill="#1a1410" clip-path="url(#pc-sp)"/><rect x="-9" y="-3" width="18" height="6" rx="3" stroke="#1a1410" stroke-width="1.5" fill="none"/><line x1="0" y1="-3" x2="0" y2="3" stroke="#1a1410" stroke-width="1"/></g></svg></div><p style="font-family:'DM Sans',sans-serif;font-size:12px;font-weight:400;letter-spacing:0.18em;text-transform:uppercase;color:#c87941;margin:0;">Medication tracker</p></div>
+<script>setTimeout(function(){var s=document.getElementById("splash");if(s){s.addEventListener("animationend",function(){s.classList.add("gone");});}},100);</script>
+<div id="root"></div>
+<script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+<script type="text/babel">
+const {useState,useEffect,useCallback,useRef}=React;
+
+// ── Supabase config ──────────────────────────────────────────────
+const SUPA_URL="https://fotzkqkghxndjnomrspr.supabase.co";
+const SUPA_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZvdHprcWtnaHhuZGpub21yc3ByIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA4MTg0MTMsImV4cCI6MjA5NjM5NDQxM30.o8AyVFlhd_g0NbdB1hd28x8ERxmCO4OjXPuwVoCJano";
+
+// ── Token resolution ─────────────────────────────────────────────
+function resolveToken(){
+  const params=new URLSearchParams(window.location.search);
+  const urlToken=params.get("u");
+  if(urlToken){localStorage.setItem("pr:token",urlToken);return urlToken;}
+  return localStorage.getItem("pr:token")||null;
+}
+const USER_TOKEN=resolveToken();
+
+// ── Supabase KV helpers ──────────────────────────────────────────
+async function sbGet(key){
+  if(!USER_TOKEN)return null;
+  const res=await fetch(`${SUPA_URL}/rest/v1/data?user_token=eq.${encodeURIComponent(USER_TOKEN)}&key=eq.${encodeURIComponent(key)}&select=value`,{headers:{"apikey":SUPA_KEY,"Authorization":"Bearer "+SUPA_KEY}});
+  if(!res.ok)return null;
+  const rows=await res.json();
+  return rows.length?rows[0].value:null;
+}
+async function sbSet(key,value){
+  if(!USER_TOKEN)return;
+  await fetch(`${SUPA_URL}/rest/v1/data`,{method:"POST",headers:{"apikey":SUPA_KEY,"Authorization":"Bearer "+SUPA_KEY,"Content-Type":"application/json","Prefer":"resolution=merge-duplicates"},body:JSON.stringify({user_token:USER_TOKEN,key,value,updated_at:new Date().toISOString()})});
+}
+async function sbGetAllDayKeys(prefix){
+  if(!USER_TOKEN)return[];
+  const res=await fetch(`${SUPA_URL}/rest/v1/data?user_token=eq.${encodeURIComponent(USER_TOKEN)}&key=like.${encodeURIComponent(prefix+'*')}&select=key,value&order=key.desc`,{headers:{"apikey":SUPA_KEY,"Authorization":"Bearer "+SUPA_KEY}});
+  if(!res.ok)return[];
+  return await res.json();
+}
+
+const PILL_LIST_KEY="pr:list",ARCHIVED_KEY="pr:archived",PROFILE_KEY="pr:profile";
+const dayKey=d=>`pr:day:${d}`;
+const asNeededDayKey=d=>`pr:asneeded:${d}`;
+
+function fmtTime(ts){const d=new Date(ts);return String(d.getHours()).padStart(2,"0")+":"+String(d.getMinutes()).padStart(2,"0");}
+function todayStr(){const d=new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");}
+function formatDayHeader(str){const[y,m,d]=str.split("-").map(Number);const dt=new Date(y,m-1,d);return{weekday:dt.toLocaleDateString("en-US",{weekday:"long"}),date:dt.toLocaleDateString("en-US",{month:"long",day:"numeric"})};}
+function formatShort(str){const[y,m,d]=str.split("-").map(Number);return new Date(y,m-1,d).toLocaleDateString("en-US",{month:"short",day:"numeric"});}
+function formatFull(str){const[y,m,d]=str.split("-").map(Number);return new Date(y,m-1,d).toLocaleDateString("en-US",{month:"long",day:"numeric",year:"numeric"});}
+function getLast30Days(){return Array.from({length:30},(_,i)=>{const d=new Date();d.setDate(d.getDate()-i);return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");});}
+function addDays(str,n){const[y,m,d]=str.split("-").map(Number);const dt=new Date(y,m-1,d);dt.setDate(dt.getDate()+n);return dt.getFullYear()+"-"+String(dt.getMonth()+1).padStart(2,"0")+"-"+String(dt.getDate()).padStart(2,"0");}
+
+const DEFAULT_PILLS={morning:[],lunch:[],evening:[],as_needed:[]};
+const TIMING_OPTIONS=[
+  {value:"upon_waking",label:"Upon waking"},{value:"before_meal",label:"Before meal"},
+  {value:"during_meal",label:"During meal"},{value:"after_meal",label:"After meal"},
+  {value:"between_meals",label:"Between meals"},{value:"before_bedtime",label:"Before bedtime"},
+];
+const DOSE_UNITS=["mg","ml","g","%","pill","tablet","capsule","spray","drop","spoon","injection","dose","pack","unit"];
+
+async function searchDrugs(query){
+  if(!query||query.length<2)return[];
+  try{
+    const q=encodeURIComponent(query);
+    const res=await fetch("https://api.fda.gov/drug/label.json?search=openfda.brand_name:"+q+"*+OR+openfda.generic_name:"+q+"*&limit=10");
+    if(!res.ok)return[];
+    const data=await res.json();
+    const results=[],seen=new Set();
+    function toTitle(s){return s?s.charAt(0).toUpperCase()+s.slice(1).toLowerCase():"";}
+    for(const r of (data.results||[])){
+      const brands=r.openfda?.brand_name||[],generics=r.openfda?.generic_name||[];
+      for(const name of brands){const k=name.toLowerCase();if(!seen.has(k)){seen.add(k);results.push({name:toTitle(name),sub:generics[0]?toTitle(generics[0]):""});}}
+      for(const name of generics){const k=name.toLowerCase();if(!seen.has(k)){seen.add(k);results.push({name:toTitle(name),sub:brands[0]?"Brand: "+toTitle(brands[0]):"Generic"});}}
+      if(results.length>=8)break;
+    }
+    return results.slice(0,8);
+  }catch{return[];}
+}
+
+const DRUG_TIPS={
+  prednisone:{color:"var(--gold)",colorBg:"var(--gold-bg)",label:"Prednisone",points:[
+    {icon:"Waves",text:"Keep sodium under 2,000 mg/day. Prednisone causes kidneys to retain salt and water, raising blood pressure and causing swelling."},
+    {icon:"Utensils",text:"Take with food or milk to reduce stomach irritation."},
+    {icon:"Salad",text:"Eat potassium-rich foods (bananas, spinach, sweet potato) — prednisone depletes potassium."},
+    {icon:"Bone",text:"Take calcium and vitamin D if not already prescribed — prednisone reduces bone density over time."},
+    {icon:"AlertTriangle",text:"Never stop abruptly. Taper dose as directed by your doctor."},
+  ]},
+  cyclobenzaprine:{color:"var(--violet)",colorBg:"var(--violet-bg)",label:"Cyclobenzaprine",points:[
+    {icon:"GlassWater",text:"No alcohol. The combination amplifies sedation and can dangerously slow breathing."},
+    {icon:"Car",text:"Do not drive until you know how it affects you — impairs coordination and reaction time."},
+    {icon:"Timer",text:"Intended for short-term use (2-3 weeks). Not effective beyond that window."},
+    {icon:"Pill",text:"Avoid antidepressants and St. John's Wort without medical advice — risk of serotonin syndrome."},
+  ]},
+  pregabalin:{color:"var(--blue)",colorBg:"rgba(0,122,255,0.09)",label:"Pregabalin",points:[
+    {icon:"GlassWater",text:"No alcohol. Both are CNS depressants — combined they can cause dangerous sedation and respiratory depression."},
+    {icon:"Car",text:"Do not drive until you know how it affects you — dizziness and drowsiness are common early on."},
+    {icon:"AlertTriangle",text:"Never stop abruptly. Taper with your doctor to avoid withdrawal symptoms."},
+  ]},
+  lyrica:{ref:"pregabalin"},flexeril:{ref:"cyclobenzaprine"},
+};
+function getDrugTips(name){if(!name)return null;const lower=name.toLowerCase();for(const[k,v]of Object.entries(DRUG_TIPS)){if(lower.includes(k)){if(v.ref)return DRUG_TIPS[v.ref];return v;}}return null;}
+
+const ShapeCapsule=({size=20,color="currentColor"})=>(<svg width={size} height={size} viewBox="0 0 32 32" fill="none"><rect x="4" y="10" width="24" height="12" rx="6" fill={color} opacity="0.15"/><rect x="4" y="10" width="24" height="12" rx="6" stroke={color} strokeWidth="2"/><line x1="16" y1="10" x2="16" y2="22" stroke={color} strokeWidth="1.5"/></svg>);
+const ShapeCaplet=({size=20,color="currentColor"})=>(<svg width={size} height={size} viewBox="0 0 32 32" fill="none"><ellipse cx="16" cy="16" rx="11" ry="6" fill={color} opacity="0.15"/><ellipse cx="16" cy="16" rx="11" ry="6" stroke={color} strokeWidth="2"/></svg>);
+const ShapeRound=({size=20,color="currentColor"})=>(<svg width={size} height={size} viewBox="0 0 32 32" fill="none"><circle cx="16" cy="16" r="10" fill={color} opacity="0.15"/><circle cx="16" cy="16" r="10" stroke={color} strokeWidth="2"/></svg>);
+const ShapeRoundScored=({size=20,color="currentColor"})=>(<svg width={size} height={size} viewBox="0 0 32 32" fill="none"><circle cx="16" cy="16" r="7" fill={color} opacity="0.15"/><circle cx="16" cy="16" r="7" stroke={color} strokeWidth="2"/><line x1="16" y1="9.7" x2="16" y2="22.3" stroke={color} strokeWidth="1.5" strokeLinecap="round"/></svg>);
+const ShapeOval=({size=20,color="currentColor"})=>(<svg width={size} height={size} viewBox="0 0 32 32" fill="none"><ellipse cx="16" cy="16" rx="12" ry="7.5" fill={color} opacity="0.15"/><ellipse cx="16" cy="16" rx="12" ry="7.5" stroke={color} strokeWidth="2"/></svg>);
+const ShapeOblong=({size=20,color="currentColor"})=>(<svg width={size} height={size} viewBox="0 0 32 32" fill="none"><rect x="3" y="12" width="26" height="8" rx="4" fill={color} opacity="0.15"/><rect x="3" y="12" width="26" height="8" rx="4" stroke={color} strokeWidth="2"/><line x1="16" y1="12.8" x2="16" y2="19.2" stroke={color} strokeWidth="1.5" strokeLinecap="round"/></svg>);
+const ShapePentagon=({size=20,color="currentColor"})=>(<svg width={size} height={size} viewBox="0 0 32 32" fill="none"><path d="M16 4 L28 12.5 L23.5 27 L8.5 27 L4 12.5 Z" fill={color} opacity="0.15"/><path d="M16 4 L28 12.5 L23.5 27 L8.5 27 L4 12.5 Z" stroke={color} strokeWidth="2" strokeLinejoin="round"/></svg>);
+const ShapeDiamond=({size=20,color="currentColor"})=>(<svg width={size} height={size} viewBox="0 0 32 32" fill="none"><path d="M16 3 L29 16 L16 29 L3 16 Z" fill={color} opacity="0.15"/><path d="M16 3 L29 16 L16 29 L3 16 Z" stroke={color} strokeWidth="2" strokeLinejoin="round"/></svg>);
+const SHAPES=[{value:"capsule",label:"Capsule",Icon:ShapeCapsule},{value:"caplet",label:"Caplet",Icon:ShapeCaplet},{value:"round",label:"Round",Icon:ShapeRound},{value:"round_scored",label:"Mini rond",Icon:ShapeRoundScored},{value:"oval",label:"Oval",Icon:ShapeOval},{value:"oblong",label:"Oblong",Icon:ShapeOblong},{value:"pentagon",label:"Pentagon",Icon:ShapePentagon},{value:"diamond",label:"Diamond",Icon:ShapeDiamond}];
+function ShapeIcon({shape,size=18,color="currentColor"}){const aliases={"oblong_scored":"oblong","round_scored":"round_scored"};const resolved=aliases[shape]||shape;const s=SHAPES.find(x=>x.value===resolved);if(!s)return <ShapeCapsule size={size} color={color}/>;return <s.Icon size={size} color={color}/>;}
+
+const IconSunrise=()=><svg width="17" height="17" viewBox="0 0 24 24" fill="none"><line x1="2" y1="18" x2="22" y2="18" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/><line x1="12" y1="2" x2="12" y2="6" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/><line x1="4.22" y1="6.22" x2="5.64" y2="7.64" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/><line x1="19.78" y1="6.22" x2="18.36" y2="7.64" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/><line x1="2" y1="13" x2="4" y2="13" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/><line x1="22" y1="13" x2="20" y2="13" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/><path d="M5 18C5 14.69 8.13 12 12 12C15.87 12 19 14.69 19 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>;
+const IconSun=()=><svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="5"/><line x1="12" y1="2" x2="12" y2="4" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/><line x1="12" y1="20" x2="12" y2="22" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/><line x1="2" y1="12" x2="4" y2="12" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/><line x1="20" y1="12" x2="22" y2="12" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/><line x1="4.93" y1="4.93" x2="6.34" y2="6.34" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/><line x1="17.66" y1="17.66" x2="19.07" y2="19.07" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/><line x1="17.66" y1="6.34" x2="19.07" y2="4.93" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/><line x1="4.93" y1="19.07" x2="6.34" y2="17.66" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>;
+const IconMoon=()=><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M21 12.79A9 9 0 1 1 11.21 3a7 7 0 0 0 9.79 9.79z" fill="currentColor"/></svg>;
+const IconCheck=()=><svg width="11" height="11" viewBox="0 0 24 24" fill="none"><polyline points="20 6 9 17 4 12" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round"/></svg>;
+const IconPlus=()=><svg width="14" height="14" viewBox="0 0 24 24" fill="none"><line x1="12" y1="5" x2="12" y2="19" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"/><line x1="5" y1="12" x2="19" y2="12" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"/></svg>;
+const IconTrash=()=><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><polyline points="3 6 5 6 21 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/><path d="M19 6l-1 14H6L5 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/><path d="M10 11v6M14 11v6" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/><path d="M9 6V4h6v2" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>;
+const IconBack=()=><svg width="10" height="18" viewBox="0 0 10 18" fill="none"><polyline points="9 1 1 9 9 17" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/></svg>;
+const IconArchive=()=><svg width="14" height="14" viewBox="0 0 24 24" fill="none"><rect x="2" y="4" width="20" height="5" rx="1" stroke="currentColor" strokeWidth="2"/><path d="M4 9v10a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1V9" stroke="currentColor" strokeWidth="2"/><path d="M10 13h4" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>;
+const IconChevron=()=><svg width="7" height="13" viewBox="0 0 7 13" fill="none"><polyline points="1 1 6 6.5 1 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>;
+const IconTabToday=({active})=><svg width="24" height="24" viewBox="0 0 24 24" fill="none"><rect x="3" y="4" width="18" height="17" rx="3" stroke="currentColor" strokeWidth={active?"2":"1.7"} fill="none"/><line x1="3" y1="9" x2="21" y2="9" stroke="currentColor" strokeWidth={active?"2":"1.7"}/><line x1="8" y1="2" x2="8" y2="6" stroke="currentColor" strokeWidth={active?"2":"1.7"} strokeLinecap="round"/><line x1="16" y1="2" x2="16" y2="6" stroke="currentColor" strokeWidth={active?"2":"1.7"} strokeLinecap="round"/>{active&&<rect x="7" y="13" width="4" height="4" rx="1" fill="currentColor"/>}</svg>;
+const IconTabHistory=({active})=><svg width="24" height="24" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth={active?"2":"1.7"}/><polyline points="12 7 12 12 15.5 14.5" stroke="currentColor" strokeWidth={active?"2":"1.7"} strokeLinecap="round" strokeLinejoin="round"/></svg>;
+const IconTabSettings=({active})=><svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" stroke="currentColor" strokeWidth={active?"2":"1.7"}/><circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth={active?"2":"1.7"}/></svg>;
+function IconClipboardList({size=20}){return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="8" y="2" width="8" height="4" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M9 12h6M9 16h4"/></svg>;}
+
+function TipIcon({name,size=16,color="currentColor"}){
+  const p={width:size,height:size,viewBox:"0 0 24 24",fill:"none",stroke:color,strokeWidth:"2",strokeLinecap:"round",strokeLinejoin:"round"};
+  const icons={
+    Waves:<svg {...p}><path d="M2 6c.6.5 1.2 1 2.5 1C7 7 7 5 9.5 5c2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1"/><path d="M2 12c.6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2 2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1"/><path d="M2 18c.6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2 2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1"/></svg>,
+    Utensils:<svg {...p}><path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"/><path d="M7 2v20"/><path d="M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3zm0 0v7"/></svg>,
+    Salad:<svg {...p}><path d="M7 21h10"/><path d="M12 21a9 9 0 0 0 9-9H3a9 9 0 0 0 9 9z"/><path d="M11.38 12a2.4 2.4 0 0 1-.4-4.77 2.4 2.4 0 0 1 3.2-3.19 2.4 2.4 0 0 1 3.47-.63 2.4 2.4 0 0 1 3.37 3.37 2.4 2.4 0 0 1-1.1 3.7 2.51 2.51 0 0 1 .03 1.1"/><path d="m13 12 4-4"/><path d="M10.9 7.25A3.99 3.99 0 0 0 4 10c0 .73.2 1.41.54 2"/></svg>,
+    Bone:<svg {...p}><path d="M17 10c.7-.7 1.69 0 2.5 0a2.5 2.5 0 1 0 0-5 .5.5 0 0 1-.5-.5 2.5 2.5 0 1 0-5 0c0 .81.7 1.8 0 2.5l-7 7c-.7.7-1.69 0-2.5 0a2.5 2.5 0 0 0 0 5c.28 0 .5.22.5.5a2.5 2.5 0 1 0 5 0c0-.81-.7-1.8 0-2.5Z"/></svg>,
+    AlertTriangle:<svg {...p}><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>,
+    GlassWater:<svg {...p}><path d="M15.2 22H8.8a2 2 0 0 1-2-1.79L5 3h14l-1.81 17.21A2 2 0 0 1 15.2 22z"/><path d="M6 12a5 5 0 0 1 6 0 5 5 0 0 0 6 0"/></svg>,
+    Car:<svg {...p}><path d="M19 17H5v1a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1v-5l2.5-6.5A2 2 0 0 1 6.36 5h11.28a2 2 0 0 1 1.86 1.5L22 13v5a1 1 0 0 1-1 1h-1a1 1 0 0 1-1-1z"/><circle cx="7.5" cy="17.5" r="2.5"/><circle cx="16.5" cy="17.5" r="2.5"/></svg>,
+    Timer:<svg {...p}><line x1="10" y1="2" x2="14" y2="2"/><line x1="12" y1="14" x2="12" y2="10"/><circle cx="12" cy="14" r="8"/></svg>,
+    Pill:<svg {...p}><path d="m10.5 20.5 10-10a4.95 4.95 0 1 0-7-7l-10 10a4.95 4.95 0 1 0 7 7z"/><line x1="8.5" y1="8.5" x2="15.5" y2="15.5"/></svg>,
+  };
+  return icons[name]||icons["Pill"];
+}
+
+function GroupCard({label,children,action}){return(<div style={{marginBottom:32}}>{label&&(<div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"0 4px",marginBottom:7}}><span style={{fontSize:13,fontWeight:600,color:"var(--t1)",textTransform:"uppercase",letterSpacing:"0.04em"}}>{label}</span>{action}</div>)}<div style={{background:"var(--card)",borderRadius:16,overflow:"hidden",boxShadow:"var(--shadow-sm)"}}>{children}</div></div>);}
+function GroupRow({first,children,onClick,style={}}){return(<div className={onClick?"row-press":""} onClick={onClick} style={{position:"relative",background:"var(--card)",cursor:onClick?"pointer":"default",...style}}>{!first&&<div style={{position:"absolute",top:0,left:16,right:0,height:"0.5px",background:"var(--sep)"}}/>}{children}</div>);}
+
+function BottomSheet({onClose,children}){
+  const sheetRef=useRef(null);
+  const dragY=useRef(0),startY=useRef(0),isDragging=useRef(false);
+  function onTouchStart(e){const el=sheetRef.current;if(!el||el.scrollTop>0)return;startY.current=e.touches[0].clientY;dragY.current=0;isDragging.current=true;}
+  function onTouchMove(e){if(!isDragging.current)return;const el=sheetRef.current;if(!el||el.scrollTop>0){isDragging.current=false;return;}const dy=e.touches[0].clientY-startY.current;if(dy<0){isDragging.current=false;return;}dragY.current=dy;el.style.transform="translateY("+dy+"px)";el.style.transition="none";}
+  function onTouchEnd(){if(!isDragging.current)return;isDragging.current=false;const el=sheetRef.current;if(!el)return;if(dragY.current>80){el.style.transition="transform 0.28s cubic-bezier(0.32,0.72,0,1)";el.style.transform="translateY(100%)";setTimeout(onClose,280);}else{el.style.transition="transform 0.22s cubic-bezier(0.22,1,0.36,1)";el.style.transform="translateY(0)";}}
+  return ReactDOM.createPortal(<>
+    <div onClick={onClose} style={{position:"fixed",inset:0,zIndex:1100,background:"rgba(0,0,0,0.4)",backdropFilter:"blur(2px)",WebkitBackdropFilter:"blur(2px)"}}/>
+    <div ref={el=>{sheetRef.current=el;if(el){el.scrollTop=0;requestAnimationFrame(()=>{el.scrollTop=0;});}}}
+      onTouchStart={onTouchStart} onTouchMove={onTouchMove} onTouchEnd={onTouchEnd}
+      style={{position:"fixed",bottom:0,left:0,right:0,zIndex:1101,background:"var(--card)",borderRadius:"20px 20px 0 0",boxShadow:"0 -4px 32px rgba(0,0,0,0.18)",paddingBottom:"env(safe-area-inset-bottom,24px)",maxHeight:"82vh",overflowY:"auto",animation:"sheetUp 0.28s cubic-bezier(0.32,0.72,0,1)",willChange:"transform"}}>
+      <div style={{display:"flex",justifyContent:"center",paddingTop:12,paddingBottom:8,cursor:"grab"}}>
+        <div style={{width:36,height:4,borderRadius:2,background:"var(--sep)"}}/>
+      </div>
+      {children}
+    </div>
+  </>,document.body);
+}
+
+function PillForm({initial,accent,onSave,onCancel,submitLabel="Add",defaultSession="morning",noAutoFocus=false}){
+  const [name,setName]=useState(initial?.name||"");
+  const [shape,setShape]=useState(initial?.shape||"capsule");
+  const [ongoing,setOngoing]=useState(initial?.durationDays==null);
+  const [durationDays,setDurationDays]=useState(initial?.durationDays||7);
+  const [startDate,setStartDate]=useState(initial?.startDate||todayStr());
+  const [asNeeded,setAsNeeded]=useState(initial?.asNeeded!=null?initial.asNeeded:false);
+  const [maxDailyDose,setMaxDailyDose]=useState(initial?.maxDailyDose||3);
+  const [minIntervalHours,setMinIntervalHours]=useState(initial?.minIntervalHours||4);
+  const [schedules,setSchedules]=useState(()=>{
+    if(initial?.schedules)return initial.schedules;
+    const sess=initial?.sessions||(initial?.session&&initial.session!=="as_needed"?[initial.session]:[defaultSession||"morning"]);
+    const timings=initial?.timings||(initial?.timing?[initial.timing]:[]);
+    return sess.map((s,i)=>({session:s,timing:timings[i]||""}));
+  });
+  function parseDose(d){const m=(d||"").match(/^(\d+(?:\.\d+)?)\s*(.*)$/);if(m)return{amt:Number(m[1])||10,unit:m[2].trim()||"mg",qty:1};return{amt:10,unit:"mg",qty:1};}
+  const parsed=parseDose(initial?.dose);
+  const [dosageAmt,setDosageAmt]=useState(initial?.dosageAmt||parsed.amt);
+  const [dosageUnit,setDosageUnit]=useState(initial?.dosageUnit||parsed.unit||"mg");
+  const [quantity,setQuantity]=useState(initial?.quantity||parsed.qty||1);
+  const [suggestions,setSuggestions]=useState([]);
+  const [showSuggestions,setShowSuggestions]=useState(false);
+  const searchTimer=useRef(null);
+  function handleNameChange(val){setName(val);setShowSuggestions(true);clearTimeout(searchTimer.current);if(val.length<2){setSuggestions([]);return;}searchTimer.current=setTimeout(async()=>{const res=await searchDrugs(val);setSuggestions(res);},300);}
+  function pickSuggestion(s){setName(s.name);setSuggestions([]);setShowSuggestions(false);}
+  function handleSave(){
+    if(!name.trim())return;
+    const dose=quantity+" x "+dosageAmt+dosageUnit;
+    const sessions=asNeeded?["as_needed"]:schedules.map(s=>s.session);
+    onSave({name:name.trim(),dose,dosageAmt,dosageUnit,quantity,shape,schedules:asNeeded?[]:schedules,sessions,startDate,durationDays:ongoing?null:Number(durationDays),asNeeded,maxDailyDose:asNeeded?Number(maxDailyDose):null,minIntervalHours:asNeeded?Number(minIntervalHours):null});
+  }
+  const stepBtn=(onClick,label)=>(<button onClick={onClick} style={{width:28,height:28,borderRadius:8,background:"var(--acc-soft)",border:"none",color:"var(--acc)",fontSize:18,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",flexShrink:0}}>{label}</button>);
+  return(
+    <div style={{padding:"16px 16px 8px",background:"var(--card2)"}}>
+      <div style={{position:"relative",marginBottom:16}}>
+        <input autoFocus={!noAutoFocus} placeholder="Medicine name" value={name}
+          onChange={e=>handleNameChange(e.target.value)} onKeyDown={e=>e.key==="Enter"&&handleSave()}
+          onFocus={()=>suggestions.length>0&&setShowSuggestions(true)}
+          style={{width:"100%",padding:"11px 14px",borderRadius:12,border:"none",background:"var(--card)",color:"var(--t1)",fontSize:16,display:"block",boxShadow:"0 1px 3px rgba(0,0,0,0.07)"}}/>
+        {showSuggestions&&suggestions.length>0&&(
+          <div style={{position:"absolute",top:"calc(100% + 4px)",left:0,right:0,background:"var(--card)",borderRadius:12,boxShadow:"0 4px 20px rgba(0,0,0,0.15)",zIndex:200,overflow:"hidden"}}>
+            {suggestions.map((s,i)=>(
+              <button key={i} onClick={()=>pickSuggestion(s)} style={{width:"100%",padding:"11px 14px",display:"flex",flexDirection:"column",alignItems:"flex-start",background:"transparent",border:"none",cursor:"pointer",borderTop:i>0?"0.5px solid var(--sep)":"none",textAlign:"left"}}>
+                <span style={{fontSize:15,fontWeight:500,color:"var(--t1)"}}>{s.name}</span>
+                {s.sub&&<span style={{fontSize:12,color:"var(--t3)",marginTop:2}}>{s.sub}</span>}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+      <div style={{marginBottom:16}}>
+        <div style={{display:"flex",marginBottom:6}}>
+          <div style={{fontSize:11,fontWeight:700,color:"var(--t2)",textTransform:"uppercase",letterSpacing:"0.06em"}}>Dosage</div>
+          <div style={{fontSize:11,fontWeight:700,color:"var(--t2)",textTransform:"uppercase",letterSpacing:"0.06em",marginLeft:"auto"}}>Quantity</div>
+        </div>
+        <div style={{display:"flex",alignItems:"center",gap:8,background:"var(--card)",borderRadius:12,boxShadow:"0 1px 3px rgba(0,0,0,0.07)",padding:"10px 12px"}}>
+          {stepBtn(()=>setDosageAmt(a=>Math.max(5,a-5)),"−")}
+          <input type="number" value={dosageAmt} onChange={e=>setDosageAmt(Math.max(1,Number(e.target.value)||1))} style={{width:44,border:"none",background:"transparent",color:"var(--t1)",fontSize:15,fontWeight:600,textAlign:"center",WebkitAppearance:"none",MozAppearance:"textfield"}}/>
+          {stepBtn(()=>setDosageAmt(a=>a+5),"+")}
+          <div style={{position:"relative",flexShrink:0}}>
+            <select value={dosageUnit} onChange={e=>setDosageUnit(e.target.value)} style={{height:28,borderRadius:8,border:"none",background:"var(--card)",color:"var(--t1)",fontSize:13,fontWeight:600,paddingLeft:8,paddingRight:24,WebkitAppearance:"none",appearance:"none",cursor:"pointer"}}>
+              {DOSE_UNITS.map(u=><option key={u} value={u}>{u}</option>)}
+            </select>
+            <svg style={{position:"absolute",right:6,top:"50%",transform:"translateY(-50%)",pointerEvents:"none"}} width="10" height="10" viewBox="0 0 24 24" fill="none"><polyline points="6 9 12 15 18 9" stroke="var(--t2)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+          </div>
+          <div style={{width:"0.5px",background:"var(--sep)",alignSelf:"stretch",margin:"0 2px",flexShrink:0}}/>
+          {stepBtn(()=>setQuantity(q=>Math.max(0.5,q-1)),"−")}
+          <input type="number" value={quantity} onChange={e=>setQuantity(Math.max(0.5,Number(e.target.value)||1))} style={{width:30,border:"none",background:"transparent",color:"var(--t1)",fontSize:15,fontWeight:600,textAlign:"center",WebkitAppearance:"none",MozAppearance:"textfield"}}/>
+          {stepBtn(()=>setQuantity(q=>q+1),"+")}
+        </div>
+      </div>
+      <div style={{marginBottom:16}}>
+        <div style={{fontSize:11,fontWeight:700,color:"var(--t2)",textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:8}}>Shape</div>
+        <div style={{display:"flex",gap:8,overflowX:"auto",WebkitOverflowScrolling:"touch",scrollbarWidth:"none",msOverflowStyle:"none",marginLeft:-16,marginRight:-16,paddingLeft:16,paddingRight:16,paddingBottom:2}}>
+          {SHAPES.map(({value,label,Icon})=>{const active=shape===value;return(
+            <button key={value} onClick={()=>setShape(value)} style={{flexShrink:0,width:70,height:70,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:5,borderRadius:14,border:"none",background:active?accent:"var(--card)",boxShadow:active?"none":"0 1px 3px rgba(0,0,0,0.07)",transition:"background 0.12s"}}>
+              <Icon size={22} color={active?"#fff":"var(--t2)"}/>
+              <span style={{fontSize:10,fontWeight:600,color:active?"#fff":"var(--t2)",letterSpacing:"0.03em"}}>{label}</span>
+            </button>
+          );})}
+        </div>
+      </div>
+      <div style={{marginBottom:16}}>
+        <div style={{fontSize:11,fontWeight:700,color:"var(--t2)",textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:8}}>Schedule</div>
+        <div style={{background:"var(--card)",borderRadius:12,overflow:"hidden",boxShadow:"0 1px 3px rgba(0,0,0,0.07)"}}>
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"13px 16px",borderBottom:asNeeded?"none":"0.5px solid var(--sep)"}}>
+            <span style={{fontSize:15,color:"var(--t1)"}}>As needed</span>
+            <button onClick={()=>setAsNeeded(!asNeeded)} style={{width:48,height:28,borderRadius:14,position:"relative",border:"none",background:asNeeded?accent:"var(--sep)",transition:"background 0.2s",cursor:"pointer"}}>
+              <div style={{position:"absolute",top:3,left:asNeeded?"23px":"3px",width:22,height:22,borderRadius:11,background:"#fff",boxShadow:"0 1px 3px rgba(0,0,0,0.25)",transition:"left 0.2s"}}/>
+            </button>
+          </div>
+          {asNeeded&&(<>
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"11px 16px",borderTop:"0.5px solid var(--sep)"}}>
+              <span style={{fontSize:15,color:"var(--t1)"}}>Max per day</span>
+              <div style={{display:"flex",alignItems:"center",gap:14}}>
+                <button onClick={()=>setMaxDailyDose(Math.max(1,maxDailyDose-1))} style={{width:30,height:30,borderRadius:8,background:"var(--acc-soft)",border:"none",color:"var(--acc)",fontSize:20,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer"}}>−</button>
+                <span style={{fontSize:16,fontWeight:600,color:"var(--t1)",minWidth:28,textAlign:"center"}}>{maxDailyDose}</span>
+                <button onClick={()=>setMaxDailyDose(maxDailyDose+1)} style={{width:30,height:30,borderRadius:8,background:"var(--acc-soft)",border:"none",color:"var(--acc)",fontSize:20,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer"}}>+</button>
+              </div>
+            </div>
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"11px 16px",borderTop:"0.5px solid var(--sep)"}}>
+              <span style={{fontSize:15,color:"var(--t1)"}}>Min. hrs between doses</span>
+              <div style={{display:"flex",alignItems:"center",gap:14}}>
+                <button onClick={()=>setMinIntervalHours(Math.max(1,minIntervalHours-1))} style={{width:30,height:30,borderRadius:8,background:"var(--acc-soft)",border:"none",color:"var(--acc)",fontSize:20,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer"}}>−</button>
+                <span style={{fontSize:16,fontWeight:600,color:"var(--t1)",minWidth:36,textAlign:"center"}}>{minIntervalHours}h</span>
+                <button onClick={()=>setMinIntervalHours(minIntervalHours+1)} style={{width:30,height:30,borderRadius:8,background:"var(--acc-soft)",border:"none",color:"var(--acc)",fontSize:20,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer"}}>+</button>
+              </div>
+            </div>
+          </>)}
+        </div>
+      </div>
+      {!asNeeded&&(
+        <div style={{marginBottom:16}}>
+          <div style={{display:"flex",flexDirection:"column",gap:8}}>
+            {schedules.map((sched,i)=>(
+              <div key={i} style={{display:"flex",alignItems:"center",gap:6}}>
+                <select value={sched.session} onChange={e=>setSchedules(prev=>prev.map((s,j)=>j===i?{...s,session:e.target.value}:s))}
+                  style={{flex:1,padding:"10px 10px",borderRadius:12,border:"none",background:"var(--card)",color:"var(--t1)",fontSize:14,fontWeight:500,boxShadow:"0 1px 3px rgba(0,0,0,0.07)",WebkitAppearance:"none",appearance:"none",backgroundImage:"url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%235c5c66' stroke-width='2.5' stroke-linecap='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E\")",backgroundRepeat:"no-repeat",backgroundPosition:"right 10px center",paddingRight:28}}>
+                  <option value="morning">Morning</option>
+                  <option value="lunch">Lunch</option>
+                  <option value="evening">Evening</option>
+                </select>
+                <select value={sched.timing} onChange={e=>setSchedules(prev=>prev.map((s,j)=>j===i?{...s,timing:e.target.value}:s))}
+                  style={{flex:1,padding:"10px 10px",borderRadius:12,border:"none",background:"var(--card)",color:sched.timing?"var(--t1)":"var(--t3)",fontSize:14,fontWeight:500,boxShadow:"0 1px 3px rgba(0,0,0,0.07)",WebkitAppearance:"none",appearance:"none",backgroundImage:"url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%235c5c66' stroke-width='2.5' stroke-linecap='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E\")",backgroundRepeat:"no-repeat",backgroundPosition:"right 10px center",paddingRight:28}}>
+                  <option value="">Any time</option>
+                  {TIMING_OPTIONS.map(o=><option key={o.value} value={o.value}>{o.label}</option>)}
+                </select>
+                {schedules.length>1&&(
+                  <button onClick={()=>setSchedules(prev=>prev.filter((_,j)=>j!==i))} style={{width:28,height:28,borderRadius:8,background:"rgba(229,52,44,0.10)",border:"none",color:"var(--red)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,cursor:"pointer"}}>
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><line x1="18" y1="6" x2="6" y2="18" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"/><line x1="6" y1="6" x2="18" y2="18" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"/></svg>
+                  </button>
+                )}
+              </div>
+            ))}
+            <button onClick={()=>setSchedules(prev=>[...prev,{session:"morning",timing:""}])} style={{display:"flex",alignItems:"center",justifyContent:"center",gap:4,padding:"9px",borderRadius:12,background:"var(--acc-soft)",color:"var(--acc)",fontSize:13,fontWeight:600,border:"none",cursor:"pointer",width:"100%"}}>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><line x1="12" y1="5" x2="12" y2="19" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"/><line x1="5" y1="12" x2="19" y2="12" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"/></svg>
+              Add schedule
+            </button>
+          </div>
+        </div>
+      )}
+      <div style={{marginBottom:20}}>
+        <div style={{fontSize:11,fontWeight:700,color:"var(--t2)",textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:8}}>Duration</div>
+        <div style={{background:"var(--card)",borderRadius:12,overflow:"hidden",boxShadow:"0 1px 3px rgba(0,0,0,0.07)"}}>
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"13px 16px",borderBottom:ongoing?"none":"0.5px solid var(--sep)"}}>
+            <span style={{fontSize:15,color:"var(--t1)"}}>Ongoing</span>
+            <button onClick={()=>setOngoing(!ongoing)} style={{width:48,height:28,borderRadius:14,position:"relative",border:"none",background:ongoing?accent:"var(--sep)",transition:"background 0.2s",cursor:"pointer"}}>
+              <div style={{position:"absolute",top:3,left:ongoing?"23px":"3px",width:22,height:22,borderRadius:11,background:"#fff",boxShadow:"0 1px 3px rgba(0,0,0,0.25)",transition:"left 0.2s"}}/>
+            </button>
+          </div>
+          {!ongoing&&(<>
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"11px 16px",borderBottom:"0.5px solid var(--sep)"}}>
+              <span style={{fontSize:15,color:"var(--t1)"}}>Days</span>
+              <div style={{display:"flex",alignItems:"center",gap:14}}>
+                <button onClick={()=>setDurationDays(Math.max(1,durationDays-1))} style={{width:30,height:30,borderRadius:8,background:"var(--acc-soft)",border:"none",color:"var(--acc)",fontSize:20,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer"}}>−</button>
+                <span style={{fontSize:16,fontWeight:600,color:"var(--t1)",minWidth:28,textAlign:"center"}}>{durationDays}</span>
+                <button onClick={()=>setDurationDays(durationDays+1)} style={{width:30,height:30,borderRadius:8,background:"var(--acc-soft)",border:"none",color:"var(--acc)",fontSize:20,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer"}}>+</button>
+              </div>
+            </div>
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"11px 16px"}}>
+              <span style={{fontSize:15,color:"var(--t1)"}}>Start date</span>
+              <input type="date" value={startDate} onChange={e=>setStartDate(e.target.value)} style={{border:"none",background:"transparent",color:"var(--blue)",fontSize:15,fontWeight:500,textAlign:"right",cursor:"pointer"}}/>
+            </div>
+          </>)}
+        </div>
+      </div>
+      <button onClick={handleSave} style={{width:"100%",padding:"14px",borderRadius:14,border:"none",background:accent,color:"#fff",fontSize:16,fontWeight:700,boxShadow:"0 2px 8px "+accent+"55",marginBottom:10,cursor:"pointer"}}>{submitLabel}</button>
+      <button onClick={onCancel} style={{width:"100%",padding:"10px",border:"none",background:"transparent",color:"var(--t2)",fontSize:15,fontWeight:500,cursor:"pointer",marginBottom:4}}>Cancel</button>
+    </div>
+  );
+}
+
+function timingLabel(pill,session){
+  const scheds=pill?.schedules;
+  if(scheds&&scheds.length){
+    if(session){const match=scheds.find(s=>s.session===session);if(!match)return null;return TIMING_OPTIONS.find(o=>o.value===match.timing)?.label||null;}
+    return scheds.map(s=>{const sess=s.session==="morning"?"Morning":s.session==="lunch"?"Lunch":"Evening";const tim=TIMING_OPTIONS.find(o=>o.value===s.timing)?.label;return tim?sess+" · "+tim:sess;}).join(", ");
+  }
+  const v=pill?.timing;return v?TIMING_OPTIONS.find(o=>o.value===v)?.label||null:null;
+}
+
+async function archiveExpired(pillList){
+  const today=todayStr();const toArchive={morning:[],lunch:[],evening:[]},remaining={morning:[],lunch:[],evening:[]};let changed=false;
+  for(const session of["morning","lunch","evening"]){for(const pill of(pillList[session]||[])){if(pill.durationDays!=null&&pill.startDate){const endDate=addDays(pill.startDate,pill.durationDays);if(today>=endDate){toArchive[session].push({...pill,archivedOn:today,endDate});changed=true;continue;}}remaining[session].push(pill);}}
+  if(!changed)return pillList;
+  const existing=await sbGet(ARCHIVED_KEY)||{morning:[],lunch:[],evening:[]};
+  await sbSet(ARCHIVED_KEY,{morning:[...existing.morning,...toArchive.morning],lunch:[...existing.lunch||[],...toArchive.lunch],evening:[...existing.evening||[],...toArchive.evening]});
+  await sbSet(PILL_LIST_KEY,remaining);return remaining;
+}
+
+function buildActivePillsForDate(date,pillList,archived){
+  const pills=[];
+  for(const session of["morning","lunch","evening"]){
+    for(const pill of(pillList[session]||[])){if(!pill.durationDays||!pill.startDate){pills.push({...pill,session});}else{const end=addDays(pill.startDate,pill.durationDays);if(date>=pill.startDate&&date<end)pills.push({...pill,session});}}
+    for(const pill of(archived[session]||[])){if(pill.startDate&&pill.endDate&&date>=pill.startDate&&date<pill.endDate)pills.push({...pill,session});}
+  }
+  return pills;
+}
+
+function dayScore(log,list,archived,date){
+  if(!log)return{pct:0,taken:0,total:0};
+  const pills=date?buildActivePillsForDate(date,list,archived):[...(list.morning||[]).map(p=>({...p,session:"morning"})),...(list.lunch||[]).map(p=>({...p,session:"lunch"})),...(list.evening||[]).map(p=>({...p,session:"evening"}))];
+  const t=pills.length,k=pills.filter(p=>log[p.session]?.[p.id]).length;
+  return{pct:t?Math.round(k/t*100):0,taken:k,total:t};
+}
+
+function getPillsForSession(pillList,key){
+  const all=[...(pillList.morning||[]),...(pillList.lunch||[]),...(pillList.evening||[])];
+  return all.filter(p=>{
+    if(p.schedules&&p.schedules.length)return p.schedules.some(s=>s.session===key);
+    return(p.sessions||[p.session]).includes(key);
+  });
+}
+
+function asNeededStatus(timestamps,pill){
+  const count=timestamps.length;
+  const atMax=pill.maxDailyDose&&count>=pill.maxDailyDose;
+  if(!count)return{canTake:true,nextAllowedTs:null,count};
+  const lastTs=timestamps[count-1];
+  const intervalMs=(pill.minIntervalHours||0)*3600000;
+  const nextAllowedTs=intervalMs>0?lastTs+intervalMs:null;
+  const intervalOk=!nextAllowedTs||Date.now()>=nextAllowedTs;
+  return{canTake:!atMax&&intervalOk,nextAllowedTs,count};
+}
+
+const _k1="sk-ant-",_k2="api03-SEHKMjVQKiarWduKxDvAWxqAHLNXUzD4hOUM8919Rcd7vfz5VPaqApJ4e5_naxddNBAFKxmt23Aff3UU-84Fdw-6amcPAAA";
+const HEALTH_ASSISTANT_API_KEY=_k1+_k2;
+
+function HealthAssistant({pillList,profile,onClose}){
+  const [msgs,setMsgs]=React.useState([]);
+  const [input,setInput]=React.useState("");
+  const [loading,setLoading]=React.useState(false);
+  const bottomRef=React.useRef(null);
+  const inputRef=React.useRef(null);
+
+  const allPills=[...(pillList.morning||[]),...(pillList.lunch||[]),...(pillList.evening||[]),...(pillList.as_needed||[])];
+  const pillSummary=allPills.length>0?allPills.map(p=>p.name+(p.dose?" "+p.dose:"")+(p.asNeeded?" (as needed)":"")).join(", "):"No medications listed";
+  const profileSummary=[profile?.age?"Age: "+profile.age:"",profile?.weight?"Weight: "+profile.weight:"",profile?.height?"Height: "+profile.height:""].filter(Boolean).join(", ")||"No profile info";
+
+  const systemPrompt=`You are a compassionate, knowledgeable health assistant — like a caring, experienced nurse.\n\nUser's current medications: ${pillSummary}\nUser profile: ${profileSummary}\n\nYour role:\n- Inform and explain clearly, using simple language\n- Be warm, empathetic, and supportive\n- You can receive the user's diagnosis or context — acknowledge it compassionately\n- Never give a personal medical opinion or recommendation\n- Never tell the user to change, stop, or adjust their treatment\n- When relevant, gently remind them to consult their doctor\n- Stay focused on health topics related to their treatment and general wellness\n- If asked something outside your scope, kindly say so\n\nAlways answer in the language the user writes in.`;
+
+  const introMsg={role:"assistant",content:"Hi, I'm here to help you understand your treatment and answer any health questions you have.\n\nI can explain how your medications work, what to expect, dietary tips, or anything related to your health. I'm here to inform and support — not to give advice.\n\nWhat would you like to know?"};
+
+  React.useEffect(()=>{setMsgs([introMsg]);},[]);
+  React.useEffect(()=>{bottomRef.current?.scrollIntoView({behavior:"smooth"});},[msgs,loading]);
+
+  const SUGGESTIONS=["Side effects?","Foods to avoid?","Can I stop early?","Drug interactions?"];
+
+  async function send(text){
+    const q=text||input.trim();
+    if(!q||loading)return;
+    setInput("");
+    const newMsgs=[...msgs,{role:"user",content:q}];
+    setMsgs(newMsgs);
+    setLoading(true);
+    try{
+      const apiMsgs=newMsgs.filter(m=>m.role!=="assistant"||m!==introMsg);
+      const res=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json","x-api-key":HEALTH_ASSISTANT_API_KEY,"anthropic-version":"2023-06-01","anthropic-dangerous-client-side-key-warning":"disabled"},body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:600,system:systemPrompt,messages:apiMsgs.map(m=>({role:m.role,content:m.content}))})});
+      const data=await res.json();
+      const reply=data.content?.[0]?.text||"I couldn't process that. Please try again.";
+      setMsgs(prev=>[...prev,{role:"assistant",content:reply}]);
+    }catch(e){
+      setMsgs(prev=>[...prev,{role:"assistant",content:"Something went wrong. Please check your connection and try again."}]);
+    }
+    setLoading(false);
+  }
+
+  const RobotIcon=({size=16,col="currentColor"})=>(
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={col} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3" y="11" width="18" height="10" rx="2"/>
+      <path d="M12 11V7"/><circle cx="12" cy="5" r="2"/>
+      <circle cx="8.5" cy="15" r="1" fill={col} stroke="none"/>
+      <circle cx="15.5" cy="15" r="1" fill={col} stroke="none"/>
+      <path d="M9 19h6"/><path d="M3 15H1M23 15h-2"/>
+    </svg>
+  );
+
+  return(
+    <div style={{display:"flex",flexDirection:"column",height:"72vh"}}>
+      <div style={{padding:"4px 20px 12px",display:"flex",alignItems:"center",gap:12,borderBottom:"0.5px solid var(--sep)"}}>
+        <div style={{width:40,height:40,borderRadius:12,background:"var(--acc-soft)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+          <RobotIcon size={20} col="var(--acc)"/>
+        </div>
+        <div style={{flex:1}}>
+          <div style={{fontSize:17,fontWeight:700,color:"var(--t1)"}}>Health Assistant</div>
+          <div style={{fontSize:12,color:"var(--t3)",marginTop:1}}>Informative · Not medical advice</div>
+        </div>
+      </div>
+
+      {allPills.length>0&&(
+        <div style={{padding:"8px 20px",background:"var(--acc-soft)",display:"flex",alignItems:"center",gap:6}}>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--acc)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          <span style={{fontSize:12,color:"var(--acc-text,var(--acc))",fontWeight:500,lineHeight:1.4}}>Aware of your treatment: {pillSummary}</span>
+        </div>
+      )}
+
+      <div style={{flex:1,overflowY:"auto",padding:"16px 20px",display:"flex",flexDirection:"column",gap:12}}>
+        {msgs.map((m,i)=>(
+          <div key={i} style={{display:"flex",gap:8,flexDirection:m.role==="user"?"row-reverse":"row",alignItems:"flex-end"}}>
+            {m.role==="assistant"&&(
+              <div style={{width:28,height:28,borderRadius:"50%",background:"var(--acc-soft)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,marginBottom:2}}>
+                <RobotIcon size={14} col="var(--acc)"/>
+              </div>
+            )}
+            <div style={{maxWidth:"82%",padding:"10px 13px",borderRadius:14,fontSize:14,lineHeight:1.55,background:m.role==="user"?"var(--acc)":"var(--bg2)",color:m.role==="user"?"#fff":"var(--t1)",borderBottomRightRadius:m.role==="user"?4:14,borderBottomLeftRadius:m.role==="assistant"?4:14,boxShadow:"0 1px 3px rgba(0,0,0,0.07)"}}>
+              {m.content.split("\n\n").filter(p=>p.trim()).map((p,j)=>(
+                <p key={j} style={{margin:j>0?"8px 0 0":0}}>{p}</p>
+              ))}
+              {m.role==="assistant"&&i>0&&(
+                <p style={{margin:"8px 0 0",paddingTop:6,borderTop:"0.5px solid var(--sep)",fontSize:11,color:"var(--t3)",fontStyle:"italic"}}>For information only — consult your doctor for medical decisions.</p>
+              )}
+            </div>
+          </div>
+        ))}
+        {loading&&(
+          <div style={{display:"flex",gap:8,alignItems:"flex-end"}}>
+            <div style={{width:28,height:28,borderRadius:"50%",background:"var(--acc-soft)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+              <RobotIcon size={14} col="var(--acc)"/>
+            </div>
+            <div style={{background:"var(--bg2)",borderRadius:14,borderBottomLeftRadius:4,padding:"12px 16px",display:"flex",gap:5,alignItems:"center",boxShadow:"0 1px 3px rgba(0,0,0,0.07)"}}>
+              {[0,1,2].map(d=>(<div key={d} style={{width:7,height:7,borderRadius:"50%",background:"var(--t3)",animation:"bounce 1.2s infinite",animationDelay:d*0.2+"s"}}/>))}
+            </div>
+          </div>
+        )}
+        {msgs.length===1&&!loading&&(
+          <div style={{display:"flex",flexWrap:"wrap",gap:8,marginTop:4}}>
+            {SUGGESTIONS.map(s=>(
+              <button key={s} onClick={()=>send(s)} style={{background:"var(--card)",border:"1px solid var(--sep)",borderRadius:20,padding:"7px 13px",fontSize:13,color:"var(--t2)",cursor:"pointer",fontFamily:"inherit"}}>{s}</button>
+            ))}
+          </div>
+        )}
+        <div ref={bottomRef}/>
+      </div>
+
+      <div style={{padding:"10px 16px",borderTop:"0.5px solid var(--sep)",background:"var(--card)",display:"flex",gap:8,alignItems:"flex-end"}}>
+        <div style={{flex:1,background:"var(--bg2)",borderRadius:22,padding:"10px 14px",display:"flex",alignItems:"center"}}>
+          <textarea ref={inputRef} value={input} onChange={e=>setInput(e.target.value)}
+            onKeyDown={e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();send();}}}
+            placeholder="Ask a question…" rows={1}
+            style={{flex:1,border:"none",outline:"none",background:"transparent",fontFamily:"inherit",fontSize:15,color:"var(--t1)",resize:"none",maxHeight:100,lineHeight:1.4,overflowY:"auto"}}
+            onInput={e=>{e.target.style.height="auto";e.target.style.height=Math.min(e.target.scrollHeight,100)+"px";}}
+          />
+        </div>
+        <button onClick={()=>send()} disabled={!input.trim()||loading}
+          style={{width:42,height:42,borderRadius:"50%",background:"var(--acc)",border:"none",cursor:input.trim()&&!loading?"pointer":"default",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,opacity:input.trim()&&!loading?1:0.4,transition:"opacity 0.15s"}}>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+        </button>
+      </div>
+    </div>
+  );
+}
+
+const TABS=[{key:"today",label:"Today",Icon:IconTabToday},{key:"history",label:"History",Icon:IconTabHistory},{key:"settings",label:"Settings",Icon:IconTabSettings}];
+
+function TabBar({view,setView,setSelectedDay}){
+  return(<div style={{position:"fixed",bottom:0,left:0,right:0,zIndex:500,background:"var(--card)",borderTop:"0.5px solid var(--sep)",display:"flex",paddingBottom:"env(safe-area-inset-bottom,16px)",boxShadow:"0 -1px 12px rgba(0,0,0,0.07)"}}>
+    {TABS.map(({key,label,Icon})=>{const active=view===key;return(
+      <button key={key} onClick={()=>{setView(key);setSelectedDay(null);}} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:4,padding:"10px 0 6px",background:"transparent",border:"none",cursor:"pointer",color:active?"var(--acc)":"var(--t3)",transition:"color 0.15s"}}>
+        <Icon active={active}/>
+        <span style={{fontSize:11,fontWeight:active?700:500,letterSpacing:"0.04em",textTransform:"uppercase"}}>{label}</span>
+      </button>
+    );})}
+  </div>);
+}
+
+function HistoryView({view,setView,selectedDay,setSelectedDay,history,setHistory,pillList,archived,sessions,toggleHistoryTaken}){
+  const [showingAll,setShowingAll]=useState(false);
+  const [loadingMore,setLoadingMore]=useState(false);
+
+  async function loadAll(){
+    setLoadingMore(true);
+    const rows=await sbGetAllDayKeys("pr:day:");
+    const all=rows.map(r=>({date:r.key.replace("pr:day:",""),log:r.value})).filter(r=>r.log!==null).sort((a,b)=>b.date.localeCompare(a.date));
+    setHistory(all);
+    setShowingAll(true);
+    setLoadingMore(false);
+  }
+
+  const archiveEvents=[];
+  for(const session of["morning","lunch","evening"]){for(const pill of(archived[session]||[])){if(pill.endDate)archiveEvents.push({date:pill.endDate,pill,session});}}
+  const archiveByDate={};
+  for(const ev of archiveEvents){if(!archiveByDate[ev.date])archiveByDate[ev.date]=[];archiveByDate[ev.date].push(ev);}
+
+  return(<div style={{minHeight:"100vh",background:"var(--bg)",paddingBottom:"calc(90px + env(safe-area-inset-bottom,0px))"}} className="fade-up">
+    <div style={{maxWidth:480,margin:"0 auto"}}>
+      <div style={{background:"var(--card)",borderRadius:"0 0 24px 24px",boxShadow:"var(--shadow-md)",marginBottom:6,paddingTop:"calc(env(safe-area-inset-top,20px) + 16px)",paddingBottom:18,paddingLeft:20,paddingRight:20,backgroundImage:"radial-gradient(ellipse at 110% -10%, var(--acc-glow) 0%, transparent 60%)"}}>
+        {selectedDay?(()=>{const{weekday,date}=formatDayHeader(selectedDay);return(<>
+          <button onClick={()=>setSelectedDay(null)} style={{display:"flex",alignItems:"center",gap:6,padding:"0",marginBottom:14,background:"transparent",color:"var(--blue)",fontSize:16,fontWeight:500}}><IconBack/> History</button>
+          <div style={{fontSize:13,color:"var(--t2)",fontWeight:500,letterSpacing:"0.06em",textTransform:"uppercase",marginBottom:4}}>{weekday}</div>
+          <h1 className="serif" style={{fontSize:34,fontWeight:400,color:"var(--t1)",letterSpacing:"-0.01em",lineHeight:1.1}}>{date}</h1>
+        </>);})():(<>
+          <div style={{fontSize:13,color:"var(--t2)",fontWeight:500,letterSpacing:"0.06em",textTransform:"uppercase",marginBottom:4}}>{showingAll?"All time":"Last 30 days"}</div>
+          <h1 className="serif" style={{fontSize:34,fontWeight:400,color:"var(--t1)",letterSpacing:"-0.01em",lineHeight:1.1}}>History</h1>
+        </>)}
+      </div>
+      <div style={{padding:"16px 16px 0"}}>
+        {selectedDay?(()=>{
+          const activePills=buildActivePillsForDate(selectedDay,pillList,archived);
+          const dayLog=history.find(h=>h.date===selectedDay)?.log;
+          const bySession={morning:[],lunch:[],evening:[]};
+          for(const p of activePills)bySession[p.session].push(p);
+          const asNeededLog=dayLog?.as_needed||{};
+          const asNeededPillsForDay=(pillList.as_needed||[]).filter(p=>asNeededLog[p.id]?.length>0);
+          return(<>
+            {sessions.map(({key,label,accent})=>(
+              <GroupCard key={key} label={label}>
+                {bySession[key].length===0
+                  ?<div style={{padding:"16px 18px",color:"var(--t3)",fontSize:15,fontStyle:"italic"}}>No medicines</div>
+                  :bySession[key].map((pill,i)=>{const t=dayLog?.[key]?.[pill.id]??false;return(
+                    <GroupRow key={pill.id} first={i===0} onClick={()=>toggleHistoryTaken(selectedDay,key,pill.id)}>
+                      <div style={{display:"flex",alignItems:"center",gap:13,padding:"13px 16px"}}>
+                        <button onClick={e=>{e.stopPropagation();toggleHistoryTaken(selectedDay,key,pill.id);}} style={{width:28,height:28,borderRadius:"50%",flexShrink:0,border:"2px solid "+(t?accent:"var(--sep)"),background:t?accent:"transparent",display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",transition:"border-color 0.15s,background 0.15s"}}>{t&&<IconCheck/>}</button>
+                        <div style={{flex:1,minWidth:0}}>
+                          <div style={{fontSize:16,fontWeight:500,color:"var(--t1)",opacity:t?0.4:1,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{pill.name}</div>
+                          <div style={{fontSize:14,color:"var(--t2)",marginTop:1}}>{pill.dose}</div>
+                        </div>
+                        <span style={{fontSize:13,fontWeight:600,color:t?"var(--green)":"var(--t3)"}}>{t?"Taken":"Missed"}</span>
+                      </div>
+                    </GroupRow>
+                  );})}
+              </GroupCard>
+            ))}
+            {asNeededPillsForDay.length>0&&(<GroupCard label="As needed">{asNeededPillsForDay.map((pill,i)=>{
+              const entries=asNeededLog[pill.id]||[];
+              const times=entries.map(e=>typeof e==="number"?fmtTime(e):(e?.time||"")).filter(Boolean);
+              return(<GroupRow key={pill.id} first={i===0}><div style={{display:"flex",alignItems:"center",gap:13,padding:"13px 16px"}}><div style={{width:28,height:28,borderRadius:"50%",flexShrink:0,background:"var(--acc-soft)",display:"flex",alignItems:"center",justifyContent:"center",color:"var(--acc)",fontSize:13,fontWeight:700}}>{entries.length}x</div><div style={{flex:1,minWidth:0}}><div style={{fontSize:16,fontWeight:500,color:"var(--t1)",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{pill.name}</div><div style={{fontSize:14,color:"var(--t2)",marginTop:1}}>{times.join(", ")}</div></div></div></GroupRow>);
+            })}</GroupCard>)}
+          </>);
+        })():(
+          <>
+          <GroupCard label="Log">
+            {history.length===0&&Object.keys(archiveByDate).length===0
+              ?<div style={{padding:"20px 18px",color:"var(--t3)",fontSize:15,fontStyle:"italic",textAlign:"center"}}>No history yet</div>
+              :(()=>{
+                const allDates=[...new Set([...history.map(h=>h.date),...Object.keys(archiveByDate)])].sort((a,b)=>b.localeCompare(a));
+                let rowIndex=0;
+                return allDates.map(date=>{
+                  const histEntry=history.find(h=>h.date===date);
+                  const archEntries=archiveByDate[date]||[];
+                  const elements=[];
+                  archEntries.forEach(ev=>{const isFirst=rowIndex===0;rowIndex++;elements.push(<GroupRow key={"arch-"+ev.pill.id} first={isFirst}><div style={{display:"flex",alignItems:"center",gap:10,padding:"11px 16px"}}><span style={{color:"var(--t3)",display:"flex",flexShrink:0}}><IconArchive/></span><span style={{fontSize:13,color:"var(--t3)",fontStyle:"italic"}}><span style={{fontStyle:"normal",fontWeight:500,color:"var(--t2)"}}>{ev.pill.name}</span>{" "}finished on {formatFull(ev.pill.endDate)}</span></div></GroupRow>);});
+                  if(histEntry){
+                    const{pct,taken:tk,total:tt}=dayScore(histEntry.log,pillList,archived,date);
+                    const isToday=date===todayStr(),col=pct===100?"var(--green)":pct>=50?"var(--acc)":"var(--red)",C=2*Math.PI*13;
+                    const isFirst=rowIndex===0;rowIndex++;
+                    const activePillsForDots=buildActivePillsForDate(date,pillList,archived);
+                    elements.push(<GroupRow key={date} first={isFirst} onClick={()=>setSelectedDay(date)}>
+                      <div style={{display:"flex",alignItems:"center",gap:13,padding:"13px 16px"}}>
+                        <div style={{position:"relative",width:32,height:32,flexShrink:0}}>
+                          <svg width="32" height="32" style={{transform:"rotate(-90deg)"}}><circle cx="16" cy="16" r="13" fill="none" stroke="var(--sep)" strokeWidth="3.5"/><circle cx="16" cy="16" r="13" fill="none" stroke={col} strokeWidth="3.5" strokeDasharray={C} strokeDashoffset={C*(1-pct/100)} strokeLinecap="round"/></svg>
+                          <div style={{position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:8,fontWeight:700,color:col}}>{pct}%</div>
+                        </div>
+                        <div style={{flex:1,minWidth:0}}>
+                          <div style={{fontSize:16,fontWeight:isToday?700:600,color:"var(--t1)"}}>
+                            {isToday?<span>Today <span style={{fontSize:13,fontWeight:500,color:"var(--t2)"}}>· {formatShort(date)}</span></span>:(()=>{const[y,m,d]=date.split("-").map(Number);const dt=new Date(y,m-1,d);return<span>{dt.toLocaleDateString("en-US",{weekday:"short"})} <span style={{fontWeight:500,color:"var(--t2)"}}>· {dt.toLocaleDateString("en-US",{month:"short",day:"numeric"})}</span></span>;})()}
+                          </div>
+                          <div style={{fontSize:13,color:"var(--t2)",marginTop:2}}>{tk} of {tt} medicines taken</div>
+                        </div>
+                        <div style={{display:"flex",flexWrap:"wrap",gap:3,width:32,justifyContent:"flex-end",flexShrink:0}}>
+                          {activePillsForDots.map(p=><div key={p.id} style={{width:7,height:7,borderRadius:"50%",background:histEntry.log?.[p.session]?.[p.id]?"var(--green)":"var(--sep)"}}/>)}
+                        </div>
+                        <div style={{color:"var(--t3)",marginLeft:2}}><IconChevron/></div>
+                      </div>
+                    </GroupRow>);
+                  }
+                  return elements;
+                });
+              })()}
+          </GroupCard>
+          {!showingAll&&USER_TOKEN&&(
+            <button onClick={loadAll} disabled={loadingMore} style={{width:"100%",padding:"13px",borderRadius:14,border:"none",background:"var(--card)",color:"var(--acc)",fontSize:15,fontWeight:600,boxShadow:"var(--shadow-sm)",marginTop:-16,marginBottom:24,cursor:"pointer",opacity:loadingMore?0.6:1}}>
+              {loadingMore?"Loading…":"Show all history"}
+            </button>
+          )}
+          </>
+        )}
+      </div>
+    </div>
+  </div>);
+}
+
+function SettingsView({profile,setProfile,pillList,archived,setPillList,setArchived,fileInputRef}){
+  return(<div style={{minHeight:"100vh",background:"var(--bg)",paddingBottom:"calc(90px + env(safe-area-inset-bottom,0px))"}} className="fade-up">
+    <div style={{maxWidth:480,margin:"0 auto"}}>
+      <div style={{background:"var(--card)",borderRadius:"0 0 24px 24px",boxShadow:"var(--shadow-md)",marginBottom:6,paddingTop:"calc(env(safe-area-inset-top,20px) + 20px)",paddingBottom:18,paddingLeft:20,paddingRight:20}}>
+        <div style={{fontSize:13,color:"var(--t2)",fontWeight:500,letterSpacing:"0.06em",textTransform:"uppercase",marginBottom:4}}>Preferences</div>
+        <h1 className="serif" style={{fontSize:34,fontWeight:400,color:"var(--t1)",letterSpacing:"-0.01em",lineHeight:1.05}}>Settings</h1>
+      </div>
+      <div style={{padding:"18px 20px 0"}}>
+        <div style={{marginBottom:28}}>
+          <div style={{fontSize:12,fontWeight:600,color:"var(--t3)",textTransform:"uppercase",letterSpacing:"0.07em",marginBottom:10}}>Profile</div>
+          <div style={{background:"var(--card)",borderRadius:16,overflow:"hidden",boxShadow:"var(--shadow-sm)"}}>
+            {[{field:"name",label:"Name",placeholder:"Your name",type:"text",width:160},{field:"age",label:"Age",placeholder:"—",type:"number",width:120},{field:"weight",label:"Weight (kg)",placeholder:"—",type:"number",width:120},{field:"height",label:"Height (cm)",placeholder:"—",type:"number",width:120}].map(({field,label,placeholder,type,width},i)=>(
+              <div key={field} style={{position:"relative"}}>{i>0&&<div style={{position:"absolute",top:0,left:16,right:0,height:"0.5px",background:"var(--sep)"}}/>}
+                <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"13px 16px"}}>
+                  <span style={{fontSize:15,color:"var(--t2)",fontWeight:500}}>{label}</span>
+                  <input type={type} value={profile[field]||""} placeholder={placeholder} onChange={e=>{const v=e.target.value;const newP={...profile,[field]:v};setProfile(newP);sbSet(PROFILE_KEY,newP);}} style={{border:"none",background:"transparent",color:"var(--t1)",fontSize:15,fontWeight:500,textAlign:"right",width,WebkitAppearance:"none"}}/>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+        <div style={{marginBottom:28}}>
+          <div style={{fontSize:12,fontWeight:600,color:"var(--t3)",textTransform:"uppercase",letterSpacing:"0.07em",marginBottom:10}}>Data</div>
+          <div style={{background:"var(--card)",borderRadius:16,overflow:"hidden",boxShadow:"var(--shadow-sm)"}}>
+            <button onClick={()=>fileInputRef.current?.click()} style={{width:"100%",display:"flex",alignItems:"center",justifyContent:"space-between",padding:"15px 16px",background:"transparent",color:"var(--t1)",fontSize:15,fontWeight:500,textAlign:"left"}}>Import backup<span style={{fontSize:13,color:"var(--blue)"}}>Choose JSON</span></button>
+            <input ref={fileInputRef} type="file" accept=".json" style={{display:"none"}} onChange={async e=>{
+              const file=e.target.files?.[0];if(!file)return;
+              try{
+                const text=await file.text();const data=JSON.parse(text);
+                if(data.pillList){await sbSet(PILL_LIST_KEY,data.pillList);setPillList(data.pillList);}
+                if(data.archived){await sbSet(ARCHIVED_KEY,data.archived);setArchived(data.archived);}
+                if(data.logs){for(const[d,l]of Object.entries(data.logs))await sbSet(dayKey(d),l);}
+                if(data.profile){await sbSet(PROFILE_KEY,data.profile);setProfile(data.profile);}
+                alert("Import successful!");
+              }catch{alert("Import failed — invalid file.");}
+            }}/>
+          </div>
+        </div>
+        <div style={{marginBottom:28}}>
+          <div style={{fontSize:12,fontWeight:600,color:"var(--t3)",textTransform:"uppercase",letterSpacing:"0.07em",marginBottom:10}}>Account</div>
+          <div style={{background:"var(--card)",borderRadius:16,overflow:"hidden",boxShadow:"var(--shadow-sm)"}}>
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"13px 16px"}}>
+              <span style={{fontSize:15,color:"var(--t2)"}}>Your token</span>
+              <span style={{fontSize:13,color:"var(--t1)",fontWeight:500,fontFamily:"monospace"}}>{USER_TOKEN||"None"}</span>
+            </div>
+          </div>
+        </div>
+        <div style={{marginBottom:28}}>
+          <div style={{fontSize:12,fontWeight:600,color:"var(--t3)",textTransform:"uppercase",letterSpacing:"0.07em",marginBottom:10}}>About</div>
+          <div style={{background:"var(--card)",borderRadius:16,overflow:"hidden",boxShadow:"var(--shadow-sm)"}}>
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"13px 16px"}}><span style={{fontSize:15,color:"var(--t2)"}}>App</span><span style={{fontSize:15,color:"var(--t1)",fontWeight:500}}>Posology</span></div>
+            <div style={{height:"0.5px",background:"var(--sep)"}}/>
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"13px 16px"}}><span style={{fontSize:15,color:"var(--t2)"}}>Version</span><span style={{fontSize:15,color:"var(--t1)",fontWeight:500}}>pr-v67</span></div>
+            <div style={{height:"0.5px",background:"var(--sep)"}}/>
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"13px 16px"}}><span style={{fontSize:15,color:"var(--t2)"}}>Storage</span><span style={{fontSize:15,color:"var(--t1)",fontWeight:500}}>Supabase</span></div>
+          </div>
+        </div>
+        <p style={{fontSize:12,color:"var(--t3)",textAlign:"center",lineHeight:1.6,paddingBottom:12}} className="safe-bottom">Data is synced to the cloud.<br/>Your token is your key — keep the link safe.</p>
+      </div>
+    </div>
+  </div>);
+}
+
+// ── No-token screen ───────────────────────────────────────────────
+function NoTokenView(){
+  return(<div style={{minHeight:"100vh",background:"var(--bg)",display:"flex",alignItems:"center",justifyContent:"center",padding:32}}>
+    <div style={{background:"var(--card)",borderRadius:20,padding:28,boxShadow:"var(--shadow-lg)",textAlign:"center",maxWidth:340}}>
+      <div style={{width:56,height:56,borderRadius:16,background:"var(--acc-soft)",display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 16px",color:"var(--acc)"}}>
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+      </div>
+      <div style={{fontSize:20,fontWeight:700,color:"var(--t1)",marginBottom:8}}>Access required</div>
+      <div style={{fontSize:15,color:"var(--t2)",lineHeight:1.6}}>Open the link you received to access your Pill Reminder. The link looks like:<br/><br/><span style={{fontFamily:"monospace",fontSize:13,color:"var(--acc)"}}>pill-reminder/?u=yourtoken</span></div>
+    </div>
+  </div>);
+}
+
+function App(){
+  const [view,setView]=useState("today");
+  const [pillList,setPillList]=useState(null);
+  const [archived,setArchived]=useState({morning:[],lunch:[],evening:[]});
+  const [todayLog,setTodayLog]=useState(null);
+  const [asNeededTs,setAsNeededTs]=useState({});
+  const [history,setHistory]=useState([]);
+  const [flash,setFlash]=useState(null);
+  const [aiTips,setAiTips]=useState(null);
+  const [tipsLoading,setTipsLoading]=useState(false);
+  const [loading,setLoading]=useState(true);
+  const [selectedDay,setSelectedDay]=useState(null);
+  const [installPrompt,setInstallPrompt]=useState(null);
+  const [installed,setInstalled]=useState(false);
+  const [detailSheet,setDetailSheet]=useState(null);
+  const [addSheet,setAddSheet]=useState(null);
+  const [showHealthAssistant,setShowHealthAssistant]=useState(false);
+  const [profile,setProfile]=useState({name:"",age:"",weight:"",height:""});
+  const [now,setNow]=useState(Date.now());
+  const fileInputRef=useRef(null);
+
+  useEffect(()=>{const t=setInterval(()=>setNow(Date.now()),30000);return()=>clearInterval(t);},[]);
+  useEffect(()=>{const h=e=>{e.preventDefault();setInstallPrompt(e);};window.addEventListener("beforeinstallprompt",h);window.addEventListener("appinstalled",()=>{setInstalled(true);setInstallPrompt(null);});return()=>window.removeEventListener("beforeinstallprompt",h);},[]);
+
+  useEffect(()=>{
+    if(!USER_TOKEN){setLoading(false);return;}
+    (async()=>{
+      let list=await sbGet(PILL_LIST_KEY)||DEFAULT_PILLS;
+      if(list.night&&!list.evening){list={...list,evening:list.night,lunch:list.lunch||[]};delete list.night;}
+      if(!list.lunch)list={...list,lunch:[]};
+      if(!list.as_needed)list={...list,as_needed:[]};
+      list=await archiveExpired(list);
+      for(const sess of["morning","lunch","evening"]){list[sess]=(list[sess]||[]).map(p=>{if(p.schedules)return p;const sessions=p.sessions||(p.session&&p.session!=="as_needed"?[p.session]:[sess]);const timings=p.timings||(p.timing?[p.timing]:[]);return{...p,schedules:sessions.map((s,i)=>({session:s,timing:timings[i]||""})),sessions};});}
+      setPillList(list);
+      generateTips(list);
+      const arch=await sbGet(ARCHIVED_KEY)||{morning:[],lunch:[],evening:[]};
+      if(arch.night&&!arch.evening){arch.evening=arch.night;delete arch.night;}if(!arch.lunch)arch.lunch=[];
+      setArchived(arch);
+      const prof=await sbGet(PROFILE_KEY)||{name:"",age:"",weight:"",height:""};setProfile(prof);
+      const today=todayStr();let log=await sbGet(dayKey(today));
+      if(!log){log=buildEmptyLog(list);await sbSet(dayKey(today),log);}
+      setTodayLog(log);
+      const ts=await sbGet(asNeededDayKey(today))||{};
+      setAsNeededTs(ts);
+      setLoading(false);
+    })();
+  },[]);
+
+  function buildEmptyLog(list){
+    const m={},l={},e={};
+    const allPills=[...(list.morning||[]),...(list.lunch||[]),...(list.evening||[])];
+    for(const pill of allPills){
+      const sessions=pill.schedules?pill.schedules.map(s=>s.session):pill.sessions||[pill.session||"morning"];
+      for(const s of sessions){if(s==="morning")m[pill.id]=false;else if(s==="lunch")l[pill.id]=false;else if(s==="evening")e[pill.id]=false;}
+    }
+    return{morning:m,lunch:l,evening:e,as_needed:{}};
+  }
+
+  const loadHistory=useCallback(async()=>{
+    const days=getLast30Days();
+    const results=await Promise.all(days.map(async d=>({date:d,log:await sbGet(dayKey(d))})));
+    setHistory(results.filter(r=>r.log!==null));
+  },[]);
+  useEffect(()=>{if(view==="history")loadHistory();},[view,loadHistory]);
+
+  async function toggleTaken(session,id){const newLog={...todayLog,[session]:{...todayLog[session],[id]:!todayLog[session][id]}};setTodayLog(newLog);await sbSet(dayKey(todayStr()),newLog);if(newLog[session][id]){setFlash(id);setTimeout(()=>setFlash(null),400);}}
+  async function toggleHistoryTaken(date,session,id){const existing=await sbGet(dayKey(date))||{morning:{},lunch:{},evening:{}};const newLog={...existing,[session]:{...existing[session],[id]:!existing[session]?.[id]}};await sbSet(dayKey(date),newLog);setHistory(prev=>prev.map(h=>h.date===date?{...h,log:newLog}:h));}
+
+
+  async function generateTips(list){
+    const allPills=[...(list.morning||[]),...(list.lunch||[]),...(list.evening||[]),...(list.as_needed||[])];
+    if(allPills.length===0){setAiTips([]);return;}
+    const pillsDesc=allPills.map(p=>{
+      const doseStr=p.dosageAmt&&p.dosageUnit?`${p.dosageAmt}${p.dosageUnit}`:p.dose||"";
+      return `- ${p.name}${doseStr?` (${doseStr})`:""}`+
+        (p.asNeeded?" [as needed]":"")+
+        (p.maxDailyDose?` max ${p.maxDailyDose}x/day`:"");
+    }).join("\n");
+    const hashKey="pr:tips:"+btoa(unescape(encodeURIComponent(pillsDesc))).slice(0,40);
+    try{
+      const cached=await sbGet(hashKey);
+      if(cached&&Array.isArray(cached)){setAiTips(cached);return;}
+    }catch{}
+    setTipsLoading(true);
+    try{
+      const res=await fetch(`${SUPA_URL}/functions/v1/get-tips`,{
+        method:"POST",
+        headers:{"Content-Type":"application/json","Authorization":"Bearer "+SUPA_KEY},
+        body:JSON.stringify({pillsDesc})
+      });
+      const tips=await res.json();
+      if(Array.isArray(tips)){
+        setAiTips(tips);
+        await sbSet(hashKey,tips);
+      }
+    }catch(e){console.error("Tips error",e);setAiTips([]);}
+    setTipsLoading(false);
+  }
+
+  async function addPill(defaultSession,pillData){
+    const{sessions:pillSessions=null,schedules:pillSchedules=null,session:legacySess,...rest}=pillData;
+    const sessList=pillSessions||(legacySess&&legacySess!=="as_needed"?[legacySess]:[defaultSession]);
+    const primarySess=sessList[0]||defaultSession;
+    const id=primarySess[0]+Date.now();
+    const pill={id,...rest,schedules:pillSchedules||sessList.map(s=>({session:s,timing:""})),sessions:sessList};
+    const newList={...pillList,[primarySess]:[...(pillList[primarySess]||[]),pill]};
+    let newLog={...todayLog};
+    for(const s of sessList){if(s!=="as_needed")newLog={...newLog,[s]:{...newLog[s],[id]:false}};}
+    setPillList(newList);setTodayLog(newLog);
+    await sbSet(PILL_LIST_KEY,newList);await sbSet(dayKey(todayStr()),newLog);
+    setAddSheet(null);
+    generateTips(newList);
+  }
+
+  async function takeAsNeeded(id){
+    const ts=Date.now();const today=todayStr();
+    const existing=asNeededTs[id]||[];
+    const newTs={...asNeededTs,[id]:[...existing,ts]};
+    setAsNeededTs(newTs);
+    await sbSet(asNeededDayKey(today),newTs);
+    const logExisting=todayLog.as_needed?.[id]||[];
+    const newLog={...todayLog,as_needed:{...todayLog.as_needed,[id]:[...logExisting,ts]}};
+    setTodayLog(newLog);await sbSet(dayKey(today),newLog);
+    setFlash(id);setTimeout(()=>setFlash(null),400);
+  }
+
+  async function deleteAsNeededPill(id){
+    const newList={...pillList,as_needed:(pillList.as_needed||[]).filter(p=>p.id!==id)};
+    const newLog={...todayLog,as_needed:{...todayLog.as_needed}};delete newLog.as_needed[id];
+    const newTs={...asNeededTs};delete newTs[id];
+    setPillList(newList);setTodayLog(newLog);setAsNeededTs(newTs);
+    await sbSet(PILL_LIST_KEY,newList);await sbSet(dayKey(todayStr()),newLog);await sbSet(asNeededDayKey(todayStr()),newTs);
+    generateTips(newList);
+  }
+
+  async function deletePill(session,id){
+    if(session==="as_needed")return deleteAsNeededPill(id);
+    let foundSess=session,pill=null;
+    for(const s of["morning","lunch","evening"]){pill=(pillList[s]||[]).find(p=>p.id===id);if(pill){foundSess=s;break;}}
+    const newList={...pillList,[foundSess]:(pillList[foundSess]||[]).filter(p=>p.id!==id)};
+    let newLog={...todayLog};
+    const sessionsToClean=pill?.schedules?pill.schedules.map(s=>s.session):pill?.sessions||[foundSess];
+    for(const s of sessionsToClean){if(newLog[s]){newLog={...newLog,[s]:{...newLog[s]}};delete newLog[s][id];}}
+    setPillList(newList);setTodayLog(newLog);await sbSet(PILL_LIST_KEY,newList);await sbSet(dayKey(todayStr()),newLog);
+    generateTips(newList);
+  }
+
+  const sessions=pillList?[{key:"morning",label:"Morning",Icon:IconSunrise,accent:"var(--acc)"},{key:"lunch",label:"Lunch",Icon:IconSun,accent:"var(--acc)"},{key:"evening",label:"Evening",Icon:IconMoon,accent:"var(--acc)"}]:[];
+
+  if(loading)return(<div style={{minHeight:"100vh",background:"var(--bg)",display:"flex",alignItems:"center",justifyContent:"center"}}><div style={{color:"var(--t2)",fontSize:14}}>Loading…</div></div>);
+  if(!USER_TOKEN)return <NoTokenView/>;
+  if(view==="history")return(<><HistoryView view={view} setView={setView} selectedDay={selectedDay} setSelectedDay={setSelectedDay} history={history} setHistory={setHistory} pillList={pillList} archived={archived} sessions={sessions} toggleHistoryTaken={toggleHistoryTaken}/><TabBar view={view} setView={setView} setSelectedDay={setSelectedDay}/></>);
+  if(view==="settings")return(<><SettingsView view={view} setView={setView} setSelectedDay={setSelectedDay} profile={profile} setProfile={setProfile} pillList={pillList} archived={archived} setPillList={setPillList} setArchived={setArchived} fileInputRef={fileInputRef}/><TabBar view={view} setView={setView} setSelectedDay={setSelectedDay}/></>);
+
+  const total=sessions.reduce((s,{key})=>s+getPillsForSession(pillList,key).length,0);
+  const taken=sessions.reduce((s,{key})=>{const p=getPillsForSession(pillList,key),l=todayLog[key]||{};return s+p.filter(x=>l[x.id]).length;},0);
+  const pct=total?taken/total:0,R=33,C=2*Math.PI*R,ringCol=pct===1?"var(--green)":"var(--acc)";
+
+  return(<>
+    <div style={{minHeight:"100vh",background:"var(--bg)",paddingBottom:"calc(90px + env(safe-area-inset-bottom,0px))"}} className="fade-up">
+      <div style={{maxWidth:480,margin:"0 auto"}}>
+        <div style={{background:"var(--card)",borderRadius:"0 0 24px 24px",boxShadow:"var(--shadow-md)",marginBottom:6,paddingTop:"calc(env(safe-area-inset-top,20px) + 20px)",paddingBottom:18,paddingLeft:20,paddingRight:20,backgroundImage:"radial-gradient(ellipse at 110% -10%, var(--acc-glow) 0%, transparent 60%)"}}>
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:12}}>
+            <div>
+              <div style={{fontSize:13,color:"var(--t2)",fontWeight:500,letterSpacing:"0.06em",textTransform:"uppercase",lineHeight:1.2,marginBottom:4}}>{new Date().toLocaleDateString("en-US",{weekday:"long"})}</div>
+              <h1 className="serif" style={{fontSize:36,fontWeight:400,color:"var(--t1)",letterSpacing:"-0.01em",lineHeight:1.05}}>{new Date().toLocaleDateString("en-US",{month:"long",day:"numeric"})}</h1>
+            </div>
+            <div style={{position:"relative",width:76,height:76,flexShrink:0}}>
+              <svg width="76" height="76" style={{transform:"rotate(-90deg)"}}><circle cx="38" cy="38" r={R} fill="none" stroke="var(--sep)" strokeWidth="5.5"/><circle cx="38" cy="38" r={R} fill="none" stroke={ringCol} strokeWidth="5.5" strokeDasharray={C} strokeDashoffset={C*(1-pct)} strokeLinecap="round" className="ring-fill"/></svg>
+              <div style={{position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center",flexDirection:"column",gap:0}}>
+                <span style={{fontSize:17,fontWeight:700,color:ringCol,lineHeight:1,letterSpacing:"-0.03em"}}>{taken}/{total}</span>
+                <span style={{fontSize:9,color:"var(--t3)",textTransform:"uppercase",letterSpacing:"0.08em",marginTop:3,fontWeight:600}}>taken</span>
+              </div>
+            </div>
+          </div>
+          <div style={{marginTop:16,marginBottom:4}}>
+            {installPrompt&&!installed&&(<button onClick={()=>{installPrompt.prompt();installPrompt.userChoice.then(()=>setInstallPrompt(null));}} style={{background:"var(--acc-soft)",color:"var(--acc)",fontSize:12,fontWeight:600,padding:"5px 12px",borderRadius:20,letterSpacing:"0.02em"}}>⬇︎ Add to Home Screen</button>)}
+          </div>
+        </div>
+        <div style={{padding:"18px 20px 0"}}>
+          <div style={{marginBottom:20,marginTop:8,display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+            <div className="serif" style={{fontSize:26,fontWeight:400,color:"var(--t1)",letterSpacing:"-0.01em",lineHeight:1.1}}>Today's Medications</div>
+            <button onClick={()=>setAddSheet({session:"morning"})} style={{display:"flex",alignItems:"center",gap:5,padding:"7px 14px",borderRadius:20,background:"var(--acc-soft)",color:"var(--acc)",fontSize:13,fontWeight:600,border:"none",cursor:"pointer",flexShrink:0}}>
+              <IconPlus/> Add
+            </button>
+          </div>
+
+          {sessions.filter(({key})=>getPillsForSession(pillList,key).length>0).map(({key,label,Icon,accent})=>{
+            const pills=getPillsForSession(pillList,key),log=todayLog[key]||{};
+            const allDone=pills.length>0&&pills.every(p=>log[p.id]),prog=pills.filter(p=>log[p.id]).length;
+            return(<div key={key} style={{marginBottom:28}}>
+              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
+                <span style={{display:"flex",alignItems:"center",gap:6,fontSize:13,fontWeight:600,color:"var(--t2)",textTransform:"uppercase",letterSpacing:"0.06em"}}><Icon/>{label}</span>
+                <span style={{fontSize:13,fontWeight:500,color:allDone?"var(--green)":"var(--t3)"}}>{allDone?"✓ Done":prog+" / "+pills.length}</span>
+              </div>
+              <div style={{display:"flex",flexDirection:"column",gap:10}}>
+                {pills.map(pill=>{
+                  const t=!!log[pill.id],tl=timingLabel(pill,key);
+                  let durationInfo=null;
+                  if(pill.durationDays!=null&&pill.startDate){const endDate=addDays(pill.startDate,pill.durationDays);const today=todayStr();const[ey,em,ed]=endDate.split("-").map(Number);const[ty,tm,td]=today.split("-").map(Number);const daysLeft=Math.round((new Date(ey,em-1,ed)-new Date(ty,tm-1,td))/(1000*60*60*24));durationInfo=daysLeft<=3?daysLeft+" day"+(daysLeft!==1?"s":"")+" left":"Until "+formatShort(endDate);}
+                  return(<div key={pill.id} className="pill-card pill-press" onClick={()=>setDetailSheet({pill,session:key,accent})}
+                    style={{display:"flex",alignItems:"center",background:"var(--card)",borderRadius:18,overflow:"hidden",boxShadow:"var(--shadow-md)",cursor:"pointer",opacity:t?0.55:1,animationDelay:pills.indexOf(pill)*60+"ms"}}>
+                    <div style={{width:68,height:92,flexShrink:0,background:"rgba(212,85,0,0.07)",display:"flex",alignItems:"center",justifyContent:"center"}}><ShapeIcon shape={pill.shape} size={28} color="var(--acc)"/></div>
+                    <div style={{flex:1,minWidth:0,padding:"10px 14px"}}>
+                      <div style={{fontSize:16,fontWeight:600,color:"var(--t1)",letterSpacing:"-0.01em",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{pill.name}</div>
+                      <div style={{fontSize:14,color:"var(--t2)",marginTop:2,fontWeight:400}}>{pill.dose}</div>
+                      {(tl||durationInfo)&&(<div style={{fontSize:13,color:"var(--t2)",marginTop:3,display:"flex",gap:5}}>{tl&&<span>{tl}</span>}{tl&&durationInfo&&<span>·</span>}{durationInfo&&<span style={{color:durationInfo.includes("left")?"var(--acc)":"var(--t3)"}}>{durationInfo}</span>}</div>)}
+                    </div>
+                    <div style={{paddingRight:10,flexShrink:0}}>
+                      <button onClick={e=>{e.stopPropagation();toggleTaken(key,pill.id);}} className={flash===pill.id?"pop":""} style={{width:44,height:44,borderRadius:"50%",border:"none",background:"transparent",display:"flex",alignItems:"center",justifyContent:"center"}}>
+                        <div style={{width:28,height:28,borderRadius:"50%",border:"2px solid "+(t?accent:"var(--sep)"),background:t?accent:"transparent",display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",transition:"border-color 0.15s,background 0.15s"}}>{t&&<IconCheck/>}</div>
+                      </button>
+                    </div>
+                  </div>);
+                })}
+              </div>
+            </div>);
+          })}
+
+          {(pillList.as_needed||[]).length>0&&(<div style={{marginBottom:28}}>
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
+              <span style={{display:"flex",alignItems:"center",gap:6,fontSize:13,fontWeight:600,color:"var(--t2)",textTransform:"uppercase",letterSpacing:"0.06em"}}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 11h-4a1 1 0 0 0-1 1v5a1 1 0 0 0 1 1h4"/><path d="M6 7v13a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V7"/><rect width="16" height="5" x="4" y="2" rx="1"/></svg>As Needed
+              </span>
+            </div>
+            <div style={{display:"flex",flexDirection:"column",gap:10}}>
+              {(pillList.as_needed||[]).map(pill=>{
+                const timestamps=asNeededTs[pill.id]||[];
+                const{canTake,nextAllowedTs,count}=asNeededStatus(timestamps,pill);
+                const atMax=pill.maxDailyDose&&count>=pill.maxDailyDose;
+                const intervalBlocked=!atMax&&!canTake;
+                const nextLabel=(nextAllowedTs&&now<nextAllowedTs)?"Next at "+fmtTime(nextAllowedTs):null;
+                return(<div key={pill.id} className="pill-card pill-press" onClick={()=>setDetailSheet({pill,session:"as_needed",accent:"var(--acc)"})}
+                  style={{display:"flex",alignItems:"center",background:"var(--card)",borderRadius:18,overflow:"hidden",boxShadow:"var(--shadow-md)",cursor:"pointer",animationDelay:(pillList.as_needed||[]).indexOf(pill)*60+"ms"}}>
+                  <div style={{width:68,height:92,flexShrink:0,background:"rgba(212,85,0,0.07)",display:"flex",alignItems:"center",justifyContent:"center"}}><ShapeIcon shape={pill.shape} size={28} color="var(--acc)"/></div>
+                  <div style={{flex:1,minWidth:0,padding:"10px 14px"}}>
+                    <div style={{fontSize:16,fontWeight:600,color:"var(--t1)",letterSpacing:"-0.01em",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{pill.name}</div>
+                    <div style={{fontSize:14,color:"var(--t2)",marginTop:2,fontWeight:400}}>{pill.dose}</div>
+                    {atMax&&<div style={{display:"inline-flex",alignItems:"center",gap:4,marginTop:4,background:"var(--acc-soft)",borderRadius:6,padding:"2px 8px"}}><svg width="11" height="11" viewBox="0 0 24 24" fill="none"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" fill="var(--acc)" stroke="var(--acc)" strokeWidth="1"/><line x1="12" y1="9" x2="12" y2="13" stroke="white" strokeWidth="2" strokeLinecap="round"/><line x1="12" y1="17" x2="12.01" y2="17" stroke="white" strokeWidth="2" strokeLinecap="round"/></svg><span style={{fontSize:12,fontWeight:700,color:"var(--acc)",letterSpacing:"0.03em"}}>Max {pill.maxDailyDose}x reached</span></div>}
+                    {!atMax&&nextLabel&&<div style={{display:"inline-flex",alignItems:"center",marginTop:4,background:"rgba(0,102,232,0.10)",borderRadius:6,padding:"2px 8px"}}><span style={{fontSize:12,fontWeight:700,color:"var(--blue)",letterSpacing:"0.03em"}}>{nextLabel}</span></div>}
+                    {!atMax&&!nextLabel&&count>0&&<div style={{fontSize:12,color:"var(--green)",marginTop:3,fontWeight:500}}>{count}x today · last at {fmtTime(timestamps[count-1])}</div>}
+                    {!atMax&&count===0&&pill.minIntervalHours&&<div style={{fontSize:13,color:"var(--t3)",marginTop:3}}>Every {pill.minIntervalHours}h · max {pill.maxDailyDose}x/day</div>}
+                  </div>
+                  <div style={{paddingRight:16,flexShrink:0}}>
+                    <button onClick={e=>{e.stopPropagation();if(canTake)takeAsNeeded(pill.id);}} className={flash===pill.id?"pop":""}
+                      style={{position:"relative",width:34,height:34,borderRadius:"50%",border:"none",background:canTake?"var(--acc-soft)":intervalBlocked?"rgba(0,102,232,0.12)":atMax?"var(--acc-soft)":"var(--bg2)",display:"flex",alignItems:"center",justifyContent:"center",color:canTake?"var(--acc)":intervalBlocked?"var(--blue)":atMax?"var(--acc)":"var(--t3)",opacity:1,transition:"background 0.15s"}}>
+                      {atMax
+                        ?<svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" stroke="currentColor" strokeWidth="2"/><line x1="12" y1="9" x2="12" y2="13" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/><line x1="12" y1="17" x2="12.01" y2="17" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
+                        :intervalBlocked
+                          ?<svg width="14" height="14" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2"/><polyline points="12 7 12 12 15 14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                          :<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><line x1="12" y1="5" x2="12" y2="19" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"/><line x1="5" y1="12" x2="19" y2="12" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"/></svg>
+                      }
+                      {count>0&&canTake&&<span style={{position:"absolute",top:-4,right:-4,background:"var(--acc)",color:"#fff",borderRadius:"50%",width:16,height:16,fontSize:10,fontWeight:700,display:"flex",alignItems:"center",justifyContent:"center"}}>{count}</span>}
+                    </button>
+                  </div>
+                </div>);
+              })}
+            </div>
+          </div>)}
+
+          {sessions.every(({key})=>getPillsForSession(pillList,key).length===0)&&(pillList.as_needed||[]).length===0&&(
+            <div style={{background:"var(--card)",borderRadius:16,boxShadow:"0 1px 4px rgba(0,0,0,0.08)",padding:"32px 24px",display:"flex",flexDirection:"column",alignItems:"center",gap:16,textAlign:"center"}}>
+              <div style={{width:52,height:52,borderRadius:14,background:"var(--acc-soft)",display:"flex",alignItems:"center",justifyContent:"center",color:"var(--acc)"}}><IconClipboardList size={26}/></div>
+              <div><div style={{fontSize:16,fontWeight:600,color:"var(--t1)",marginBottom:4}}>No medications yet</div><div style={{fontSize:14,color:"var(--t2)"}}>Add your first one to get started</div></div>
+              <button onClick={()=>setAddSheet({session:"morning"})} style={{display:"inline-flex",alignItems:"center",gap:8,padding:"12px 24px",borderRadius:14,background:"var(--acc)",color:"#fff",fontSize:15,fontWeight:600,boxShadow:"0 2px 8px rgba(224,94,0,0.3)"}}><IconPlus/>Add a medication</button>
+            </div>
+          )}
+
+          {(()=>{
+            const colorMap={orange:"var(--acc)",blue:"var(--blue)",green:"var(--green)",red:"var(--red)",purple:"var(--violet)"};
+            return(<div style={{marginTop:28}}>
+              <div style={{marginBottom:14,display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+                <div className="serif" style={{fontSize:26,fontWeight:400,color:"var(--t1)",letterSpacing:"-0.01em",lineHeight:1.1}}>Recommendations</div>
+                {tipsLoading&&<div style={{width:14,height:14,border:"2px solid var(--sep)",borderTopColor:"var(--acc)",borderRadius:"50%",animation:"spin 0.8s linear infinite"}}/>}
+              </div>
+              {!tipsLoading&&(!aiTips||aiTips.length===0)?(
+                <div style={{background:"var(--card)",borderRadius:16,boxShadow:"0 1px 4px rgba(0,0,0,0.08)",padding:"32px 24px",display:"flex",flexDirection:"column",alignItems:"center",gap:16,textAlign:"center"}}>
+                  <div style={{width:52,height:52,borderRadius:14,background:"var(--acc-soft)",display:"flex",alignItems:"center",justifyContent:"center",color:"var(--acc)"}}><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/></svg></div>
+                  <div><div style={{fontSize:16,fontWeight:600,color:"var(--t1)",marginBottom:4}}>No alerts</div><div style={{fontSize:14,color:"var(--t2)"}}>Add a medication to see personalized recommendations.</div></div>
+                </div>
+              ):(aiTips||[]).map((tip,ti)=>{
+                const col=colorMap[tip.colorKey]||"var(--acc)";
+                return(
+                <div key={ti} style={{background:"var(--card)",borderRadius:14,overflow:"hidden",marginBottom:12,boxShadow:"0 1px 3px rgba(0,0,0,0.07)"}}>
+                  <div style={{display:"flex",alignItems:"center",gap:10,padding:"13px 16px",borderBottom:"0.5px solid var(--sep-strong)"}}>
+                    <div style={{width:8,height:8,borderRadius:"50%",background:col,flexShrink:0}}/>
+                    <span style={{fontSize:15,fontWeight:600,color:"var(--t1)"}}>{tip.label}</span>
+                  </div>
+                  {(tip.points||[]).map((pt,i)=>(<div key={i} style={{position:"relative"}}>{i>0&&<div style={{position:"absolute",top:0,left:16,right:0,height:"0.5px",background:"var(--sep-strong)"}}/>}<div style={{display:"flex",alignItems:"flex-start",gap:12,padding:"12px 16px"}}><span style={{flexShrink:0,display:"flex",alignItems:"center",color:col,marginTop:2}}><TipIcon name={pt.icon} size={18}/></span><p style={{margin:0,fontSize:14,lineHeight:1.6,color:"var(--t2)",fontWeight:500}}>{pt.text}</p></div></div>))}
+                  <div style={{padding:"10px 16px",borderTop:"0.5px solid var(--sep)"}}><p style={{margin:0,fontSize:11,color:"var(--t3)",fontStyle:"italic"}}>Always follow your doctor's instructions. This is general information only.</p></div>
+                </div>
+              );})}
+            </div>);
+          })()}
+          <div style={{textAlign:"center",fontSize:12,color:"var(--t3)",paddingTop:16,paddingBottom:12,letterSpacing:"0.02em"}} className="safe-bottom">Synced to cloud · Resets at midnight</div>
+
+          <div style={{marginBottom:28}}>
+            <button onClick={()=>setShowHealthAssistant(true)} style={{width:"100%",display:"flex",alignItems:"center",gap:14,padding:"16px 20px",borderRadius:18,background:"var(--card)",border:"1px solid var(--sep)",boxShadow:"0 1px 3px rgba(0,0,0,0.07)",cursor:"pointer",textAlign:"left"}}>
+              <div style={{width:44,height:44,borderRadius:12,background:"var(--acc-soft)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--acc)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M12 11V7"/><circle cx="12" cy="5" r="2"/><circle cx="8.5" cy="15" r="1" fill="var(--acc)" stroke="none"/><circle cx="15.5" cy="15" r="1" fill="var(--acc)" stroke="none"/><path d="M9 19h6"/><path d="M3 15H1M23 15h-2"/></svg>
+              </div>
+              <div style={{flex:1}}>
+                <div style={{fontSize:16,fontWeight:600,color:"var(--t1)"}}>Health Assistant</div>
+                <div style={{fontSize:13,color:"var(--t3)",marginTop:2}}>Ask questions about your treatment</div>
+              </div>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--t3)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <TabBar view={view} setView={setView} setSelectedDay={setSelectedDay}/>
+
+    {addSheet&&(<BottomSheet onClose={()=>setAddSheet(null)}>
+      <div style={{padding:"4px 20px 12px"}}><div style={{fontSize:18,fontWeight:700,color:"var(--t1)"}}>Add medication</div></div>
+      <div style={{borderTop:"0.5px solid var(--sep)"}}>
+        <PillForm initial={{session:addSheet.session,asNeeded:false}} accent="var(--acc)" defaultSession={addSheet.session} submitLabel="Add" noAutoFocus={true} onSave={data=>addPill(addSheet.session,data)} onCancel={()=>setAddSheet(null)}/>
+      </div>
+    </BottomSheet>)}
+
+    {detailSheet&&(<BottomSheet onClose={()=>setDetailSheet(null)}>
+      <div style={{display:"flex",alignItems:"center",gap:14,padding:"4px 20px 16px"}}>
+        <div style={{width:52,height:52,borderRadius:14,flexShrink:0,background:"var(--sep)",display:"flex",alignItems:"center",justifyContent:"center"}}><ShapeIcon shape={detailSheet.pill.shape} size={28} color="var(--t2)"/></div>
+        <div style={{flex:1,minWidth:0}}>
+          <div style={{fontSize:20,fontWeight:700,color:"var(--t1)",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{detailSheet.pill.name}</div>
+          <div style={{fontSize:14,color:"var(--t2)",marginTop:2}}>{detailSheet.pill.dose}</div>
+        </div>
+        <button onClick={()=>{deletePill(detailSheet.session,detailSheet.pill.id);setDetailSheet(null);}} style={{width:36,height:36,borderRadius:10,flexShrink:0,border:"none",cursor:"pointer",background:"rgba(255,59,48,0.10)",display:"flex",alignItems:"center",justifyContent:"center",color:"var(--red)"}}><IconTrash/></button>
+      </div>
+      {detailSheet.session==="as_needed"&&(()=>{
+        const pid=detailSheet.pill.id;
+        const timestamps=asNeededTs[pid]||[];
+        async function updateTimestamps(newTs){
+          const sorted=[...newTs].sort((a,b)=>a-b);
+          const newAsNeededTs={...asNeededTs,[pid]:sorted};
+          setAsNeededTs(newAsNeededTs);
+          await sbSet(asNeededDayKey(todayStr()),newAsNeededTs);
+          const newLog={...todayLog,as_needed:{...todayLog.as_needed,[pid]:sorted}};
+          setTodayLog(newLog);await sbSet(dayKey(todayStr()),newLog);
+        }
+        function tsToTimeInput(ts){const d=new Date(ts);return String(d.getHours()).padStart(2,"0")+":"+String(d.getMinutes()).padStart(2,"0");}
+        function timeInputToTs(val,refTs){const[h,m]=val.split(":").map(Number);const d=new Date(refTs||Date.now());d.setHours(h,m,0,0);return d.getTime();}
+        return(<div style={{borderTop:"0.5px solid var(--sep)",padding:"16px 20px"}}>
+          <div style={{fontSize:11,fontWeight:700,color:"var(--t2)",textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:10}}>Today's doses</div>
+          <div style={{background:"var(--card)",borderRadius:12,overflow:"hidden",boxShadow:"var(--shadow-sm)"}}>
+            {timestamps.length===0&&(
+              <div style={{padding:"13px 16px",color:"var(--t3)",fontSize:14,fontStyle:"italic"}}>No doses logged today</div>
+            )}
+            {timestamps.map((ts,i)=>{const ordinals=["1st","2nd","3rd","4th","5th","6th","7th","8th"];const ord=ordinals[i]||(i+1)+"th";return(
+              <div key={ts} style={{position:"relative"}}>
+                {i>0&&<div style={{position:"absolute",top:0,left:16,right:0,height:"0.5px",background:"var(--sep)"}}/>}
+                <div style={{display:"flex",alignItems:"center",gap:10,padding:"11px 16px"}}>
+                  <span style={{fontSize:13,fontWeight:500,color:"var(--t2)",minWidth:52}}>{ord} dose</span>
+                  <input type="time" defaultValue={tsToTimeInput(ts)}
+                    onBlur={e=>{const newVal=e.target.value;if(!newVal)return;const newTs=timestamps.map((t,j)=>j===i?timeInputToTs(newVal,t):t);updateTimestamps(newTs);}}
+                    style={{flex:1,border:"none",background:"transparent",color:"var(--blue)",fontSize:15,fontWeight:500,cursor:"pointer",padding:0}}/>
+                  <button onClick={()=>updateTimestamps(timestamps.filter((_,j)=>j!==i))}
+                    style={{width:28,height:28,borderRadius:8,background:"rgba(229,52,44,0.10)",border:"none",color:"var(--red)",display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",flexShrink:0}}>
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><line x1="18" y1="6" x2="6" y2="18" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"/><line x1="6" y1="6" x2="18" y2="18" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"/></svg>
+                  </button>
+                </div>
+              </div>
+            );})}
+            <div style={{position:"relative"}}>
+              {timestamps.length>0&&<div style={{position:"absolute",top:0,left:16,right:0,height:"0.5px",background:"var(--sep)"}}/>}
+              <button onClick={()=>{updateTimestamps([...timestamps,Date.now()]);}} style={{width:"100%",display:"flex",alignItems:"center",gap:8,padding:"11px 16px",background:"transparent",border:"none",color:"var(--acc)",fontSize:14,fontWeight:600,cursor:"pointer",textAlign:"left"}}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><line x1="12" y1="5" x2="12" y2="19" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"/><line x1="5" y1="12" x2="19" y2="12" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"/></svg>
+                Add missed dose
+              </button>
+            </div>
+          </div>
+        </div>);
+      })()}
+      <div style={{borderTop:"0.5px solid var(--sep)"}}>
+        <PillForm initial={detailSheet.pill} accent={detailSheet.accent} submitLabel="Save" noAutoFocus={true}
+          onSave={async(data)=>{
+            const id=detailSheet.pill.id;
+            const{schedules:newSchedules=[],sessions:newSessions,...rest}=data;
+            let newList={...pillList};
+            if(detailSheet.session==="as_needed"){
+              const updatedPill={...detailSheet.pill,...rest,schedules:[],sessions:["as_needed"]};
+              newList={...pillList,as_needed:(pillList.as_needed||[]).map(p=>p.id===id?updatedPill:p)};
+              setPillList(newList);await sbSet(PILL_LIST_KEY,newList);setDetailSheet(null);return;
+            }
+            const oldSchedules=detailSheet.pill.schedules||[{session:detailSheet.session,timing:""}];
+            const oldSessions=oldSchedules.map(s=>s.session);
+            const newSessList=newSchedules.map(s=>s.session);
+            let primarySess=oldSessions[0];
+            for(const s of["morning","lunch","evening"]){if((pillList[s]||[]).find(p=>p.id===id)){primarySess=s;break;}}
+            const newPrimarySess=newSessList[0]||primarySess;
+            const updatedPill={...detailSheet.pill,...rest,schedules:newSchedules,sessions:newSessList};
+            if(newPrimarySess!==primarySess){newList[primarySess]=(newList[primarySess]||[]).filter(p=>p.id!==id);newList[newPrimarySess]=[...(newList[newPrimarySess]||[]),updatedPill];}
+            else{newList[primarySess]=(newList[primarySess]||[]).map(p=>p.id===id?updatedPill:p);}
+            let newLog={...todayLog};
+            for(const s of oldSessions){if(!newSessList.includes(s)&&newLog[s]){newLog={...newLog,[s]:{...newLog[s]}};delete newLog[s][id];}}
+            for(const s of newSessList){if(!oldSessions.includes(s)&&s!=="as_needed"){newLog={...newLog,[s]:{...newLog[s],[id]:false}};}}
+            setTodayLog(newLog);await sbSet(dayKey(todayStr()),newLog);
+            setPillList(newList);await sbSet(PILL_LIST_KEY,newList);setDetailSheet(null);
+          }}
+          onCancel={()=>setDetailSheet(null)}
+        />
+      </div>
+    </BottomSheet>)}
+
+    {showHealthAssistant&&(<BottomSheet onClose={()=>setShowHealthAssistant(false)}>
+      <HealthAssistant pillList={pillList} profile={profile} onClose={()=>setShowHealthAssistant(false)}/>
+    </BottomSheet>)}
+  </>);
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+</script>
+<script>
+if("serviceWorker"in navigator){
+  const sw='const C="pr-v67",A=[self.location.pathname];self.addEventListener("install",e=>{e.waitUntil(caches.open(C).then(c=>c.addAll(A)));self.skipWaiting();});self.addEventListener("activate",e=>{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==C).map(k=>caches.delete(k)))));self.clients.claim();});self.addEventListener("fetch",e=>{if(e.request.url.includes("supabase.co")){e.respondWith(fetch(e.request));return;}e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request).then(res=>{const cl=res.clone();caches.open(C).then(c=>c.put(e.request,cl));return res;})));});';
+  navigator.serviceWorker.register(URL.createObjectURL(new Blob([sw],{type:"application/javascript"})),{scope:"./"}).catch(e=>console.warn(e));
+}
+</script>
+</body>
+</html>
+
