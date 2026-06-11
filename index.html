@@ -466,17 +466,20 @@ function HealthAssistant({pillList,profile,onClose}){
   const [msgs,setMsgs]=React.useState([]);
   const [input,setInput]=React.useState("");
   const [loading,setLoading]=React.useState(false);
-  const [tabH,setTabH]=React.useState(83);
+  const [kb,setKb]=React.useState(0);
   const bottomRef=React.useRef(null);
   const inputRef=React.useRef(null);
 
   React.useEffect(()=>{
-    const measure=()=>{
-      const tb=document.getElementById("main-tabbar");
-      if(tb)setTabH(tb.getBoundingClientRect().height);
+    const vv=window.visualViewport;
+    if(!vv)return;
+    const onResize=()=>{
+      const offset=Math.max(0,window.innerHeight-vv.height-vv.offsetTop);
+      setKb(offset);
     };
-    measure();
-    setTimeout(measure,100);
+    vv.addEventListener("resize",onResize);
+    vv.addEventListener("scroll",onResize);
+    return()=>{vv.removeEventListener("resize",onResize);vv.removeEventListener("scroll",onResize);};
   },[]);
 
   const allPills=[...(pillList.morning||[]),...(pillList.lunch||[]),...(pillList.evening||[]),...(pillList.as_needed||[])];
@@ -511,7 +514,7 @@ function HealthAssistant({pillList,profile,onClose}){
         setMsgs(prev=>[...prev,{role:"assistant",content:reply}]);
       }
     }catch(e){
-      setMsgs(prev=>[...prev,{role:"assistant",content:"⚠️ "+e.message}]);
+      setMsgs(prev=>[...prev,{role:"assistant",content:"⚠️ "+( e.message||"Load failed — check connection")}]);
     }
     setLoading(false);
   }
@@ -527,7 +530,7 @@ function HealthAssistant({pillList,profile,onClose}){
   );
 
   return(
-    <div style={{position:"fixed",top:0,left:0,right:0,bottom:0,display:"flex",flexDirection:"column",background:"var(--bg)",zIndex:10,paddingBottom:tabH+"px"}}>
+    <div style={{minHeight:"100vh",background:"var(--bg)",paddingBottom:"calc(120px + env(safe-area-inset-bottom,0px))"}} className="fade-up">
       <div style={{flexShrink:0,background:"var(--card)",borderBottom:"0.5px solid var(--sep)",paddingTop:"calc(env(safe-area-inset-top,20px) + 12px)"}}>
         <div style={{padding:"0 20px 12px",display:"flex",alignItems:"center",gap:12}}>
           <div style={{width:40,height:40,borderRadius:12,background:"var(--acc-soft)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
@@ -546,7 +549,7 @@ function HealthAssistant({pillList,profile,onClose}){
         )}
       </div>
 
-      <div style={{flex:1,overflowY:"auto",padding:"16px 20px",display:"flex",flexDirection:"column",gap:12}}>
+      <div style={{padding:"16px 20px",display:"flex",flexDirection:"column",gap:12}}>
         {msgs.map((m,i)=>(
           <div key={i} style={{display:"flex",gap:8,flexDirection:m.role==="user"?"row-reverse":"row",alignItems:"flex-start",marginTop:4}}>
             {m.role==="assistant"&&(
@@ -585,12 +588,13 @@ function HealthAssistant({pillList,profile,onClose}){
         <div ref={bottomRef}/>
       </div>
 
-      <div style={{flexShrink:0,padding:"10px 16px",paddingBottom:"calc(10px + env(safe-area-inset-bottom,0px))",borderTop:"0.5px solid var(--sep)",background:"var(--card)",display:"flex",gap:8,alignItems:"flex-end"}}>
+      <div style={{position:"fixed",bottom:kb>0?kb+"px":"calc(59px + env(safe-area-inset-bottom,16px))",left:0,right:0,padding:"10px 16px",borderTop:"0.5px solid var(--sep)",background:"var(--card)",display:"flex",gap:8,alignItems:"flex-end",zIndex:600,transition:"bottom 0.1s ease-out"}}>
         <div style={{flex:1,background:"var(--bg2)",borderRadius:22,padding:"10px 14px",display:"flex",alignItems:"center"}}>
           <textarea ref={inputRef} value={input} onChange={e=>setInput(e.target.value)}
             onKeyDown={e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();send();}}}
+            onBlur={()=>setTimeout(()=>setKb(0),100)}
             placeholder="Ask a question…" rows={1}
-            style={{flex:1,border:"none",outline:"none",background:"transparent",fontFamily:"inherit",fontSize:15,color:"var(--t1)",resize:"none",maxHeight:100,lineHeight:1.4,overflowY:"auto"}}
+            style={{flex:1,border:"none",outline:"none",background:"transparent",fontFamily:"inherit",fontSize:16,color:"var(--t1)",resize:"none",maxHeight:100,lineHeight:1.4,overflowY:"auto",minWidth:0}}
             onInput={e=>{e.target.style.height="auto";e.target.style.height=Math.min(e.target.scrollHeight,100)+"px";}}
           />
         </div>
@@ -604,6 +608,7 @@ function HealthAssistant({pillList,profile,onClose}){
 }
 
 const IconTabNurse=({active})=><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={active?"2":"1.7"} strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M12 11V7"/><circle cx="12" cy="5" r="2"/><circle cx="8.5" cy="15" r="1" fill="currentColor" stroke="none"/><circle cx="15.5" cy="15" r="1" fill="currentColor" stroke="none"/><path d="M9 19h6"/><path d="M3 15H1M23 15h-2"/></svg>;
+
 const TABS=[{key:"today",label:"Today",Icon:IconTabToday},{key:"history",label:"History",Icon:IconTabHistory},{key:"nurse",label:"Nurse",Icon:IconTabNurse},{key:"settings",label:"Settings",Icon:IconTabSettings}];
 
 function TabBar({view,setView,setSelectedDay,hasNewTips}){
@@ -796,7 +801,7 @@ function SettingsView({profile,setProfile,pillList,archived,setPillList,setArchi
           <div style={{background:"var(--card)",borderRadius:16,overflow:"hidden",boxShadow:"var(--shadow-sm)"}}>
             <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"13px 16px"}}><span style={{fontSize:15,color:"var(--t2)"}}>App</span><span style={{fontSize:15,color:"var(--t1)",fontWeight:500}}>Posology</span></div>
             <div style={{height:"0.5px",background:"var(--sep)"}}/>
-            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"13px 16px"}}><span style={{fontSize:15,color:"var(--t2)"}}>Version</span><span style={{fontSize:15,color:"var(--t1)",fontWeight:500}}>pr-v95</span></div>
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"13px 16px"}}><span style={{fontSize:15,color:"var(--t2)"}}>Version</span><span style={{fontSize:15,color:"var(--t1)",fontWeight:500}}>pr-v100</span></div>
             <div style={{height:"0.5px",background:"var(--sep)"}}/>
             <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"13px 16px"}}><span style={{fontSize:15,color:"var(--t2)"}}>Storage</span><span style={{fontSize:15,color:"var(--t1)",fontWeight:500}}>Supabase</span></div>
           </div>
@@ -1046,7 +1051,7 @@ function App(){
   if(!USER_TOKEN)return <NoTokenView/>;
   if(view==="history")return(<><HistoryView view={view} setView={setView} selectedDay={selectedDay} setSelectedDay={setSelectedDay} history={history} setHistory={setHistory} pillList={pillList} archived={archived} sessions={sessions} toggleHistoryTaken={toggleHistoryTaken}/><TabBar view={view} setView={setView} setSelectedDay={setSelectedDay} hasNewTips={false}/></>);
   if(view==="settings")return(<><SettingsView view={view} setView={setView} setSelectedDay={setSelectedDay} profile={profile} setProfile={setProfile} pillList={pillList} archived={archived} setPillList={setPillList} setArchived={setArchived} fileInputRef={fileInputRef}/><TabBar view={view} setView={setView} setSelectedDay={setSelectedDay} hasNewTips={false}/></>);
-  if(view==="nurse")return(<><HealthAssistant pillList={pillList} profile={profile}/><TabBar view={view} setView={setView} setSelectedDay={setSelectedDay} hasNewTips={false}/></>);
+  if(view==="nurse")return(<><TabBar view={view} setView={setView} setSelectedDay={setSelectedDay} hasNewTips={false}/><HealthAssistant pillList={pillList} profile={profile}/></>);
 
   const total=sessions.reduce((s,{key})=>s+getPillsForSession(pillList,key).length,0);
   const taken=sessions.reduce((s,{key})=>{const p=getPillsForSession(pillList,key),l=todayLog[key]||{};return s+p.filter(x=>l[x.id]).length;},0);
@@ -1300,7 +1305,7 @@ ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
 </script>
 <script>
 if("serviceWorker"in navigator){
-  const sw='const C="pr-v95",A=[self.location.pathname];self.addEventListener("install",e=>{e.waitUntil(caches.open(C).then(c=>c.addAll(A)));self.skipWaiting();});self.addEventListener("activate",e=>{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==C).map(k=>caches.delete(k)))));self.clients.claim();});self.addEventListener("fetch",e=>{if(e.request.url.includes("supabase.co")){e.respondWith(fetch(e.request));return;}e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request).then(res=>{const cl=res.clone();caches.open(C).then(c=>c.put(e.request,cl));return res;})));});';
+  const sw='const C="pr-v100",A=[self.location.pathname];self.addEventListener("install",e=>{e.waitUntil(caches.open(C).then(c=>c.addAll(A)));self.skipWaiting();});self.addEventListener("activate",e=>{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==C).map(k=>caches.delete(k)))));self.clients.claim();});self.addEventListener("fetch",e=>{if(e.request.url.includes("supabase.co")){e.respondWith(fetch(e.request));return;}e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request).then(res=>{const cl=res.clone();caches.open(C).then(c=>c.put(e.request,cl));return res;})));});';
   navigator.serviceWorker.register(URL.createObjectURL(new Blob([sw],{type:"application/javascript"})),{scope:"./"}).catch(e=>console.warn(e));
 }
 </script>
