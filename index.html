@@ -10,7 +10,7 @@
   <meta name="apple-mobile-web-app-title" content="Posology"/>
   <title>Posology</title>
   <script>
-    const manifestData={name:"Posology",short_name:"Posology",start_url:"./",display:"standalone",background_color:"#1a1410",theme_color:"#1a1410",orientation:"portrait",icons:[{src:"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='110' fill='%231a1410'/%3E%3Cg transform='translate(256%2C256) rotate(-66)'%3E%3CclipPath id='p'%3E%3Crect x='-130' y='-44' width='260' height='88' rx='44'/%3E%3C/clipPath%3E%3Crect x='-130' y='-44' width='130' height='88' fill='%23faf7f2' clip-path='url(%23p)'/%3E%3Crect x='-130' y='-44' width='260' height='88' rx='44' stroke='%23faf7f2' stroke-width='18' fill='none'/%3E%3Cline x1='0' y1='-44' x2='0' y2='44' stroke='%231a1410' stroke-width='14'/%3E%3C/g%3E%3C/svg%3E",sizes:"any",type:"image/svg+xml",purpose:"any maskable"}]};
+    const manifestData={name:"Posology",short_name:"Posology",start_url:"./",display:"standalone",background_color:"#1a1410",theme_color:"#1a1410",orientation:"portrait",icons:[{src:"data:image/svg+xml,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20viewBox%3D'0%200%20512%20512'%3E%3Crect%20width%3D'512'%20height%3D'512'%20rx%3D'112'%20fill%3D'%231a1a1a'%2F%3E%3Cg%20transform%3D'translate%28256%2C256%29%20rotate%28-45%29'%3E%3Crect%20x%3D'-140'%20y%3D'-44'%20width%3D'280'%20height%3D'88'%20rx%3D'44'%20fill%3D'none'%20stroke%3D'%23e8956a'%20stroke-width%3D'18'%2F%3E%3C%2Fg%3E%3Cg%20transform%3D'translate%28256%2C256%29%20rotate%2845%29'%3E%3Crect%20x%3D'-140'%20y%3D'-44'%20width%3D'280'%20height%3D'88'%20rx%3D'44'%20fill%3D'%231a1a1a'%20stroke%3D'none'%2F%3E%3C%2Fg%3E%3Cg%20transform%3D'translate%28256%2C256%29%20rotate%2845%29'%3E%3Crect%20x%3D'-140'%20y%3D'-44'%20width%3D'280'%20height%3D'88'%20rx%3D'44'%20fill%3D'none'%20stroke%3D'%23c87941'%20stroke-width%3D'18'%2F%3E%3Cline%20x1%3D'0'%20y1%3D'-44'%20x2%3D'0'%20y2%3D'44'%20stroke%3D'%23c87941'%20stroke-width%3D'18'%20stroke-linecap%3D'round'%2F%3E%3C%2Fg%3E%3C%2Fsvg%3E",sizes:"any",type:"image/svg+xml",purpose:"any maskable"}]};
     const bl=new Blob([JSON.stringify(manifestData)],{type:"application/manifest+json"});
     const ml=document.createElement("link");ml.rel="manifest";ml.href=URL.createObjectURL(bl);document.head.appendChild(ml);
   </script>
@@ -801,7 +801,7 @@ function SettingsView({profile,setProfile,pillList,archived,setPillList,setArchi
           <div style={{background:"var(--card)",borderRadius:16,overflow:"hidden",boxShadow:"var(--shadow-sm)"}}>
             <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"13px 16px"}}><span style={{fontSize:15,color:"var(--t2)"}}>App</span><span style={{fontSize:15,color:"var(--t1)",fontWeight:500}}>Posology</span></div>
             <div style={{height:"0.5px",background:"var(--sep)"}}/>
-            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"13px 16px"}}><span style={{fontSize:15,color:"var(--t2)"}}>Version</span><span style={{fontSize:15,color:"var(--t1)",fontWeight:500}}>pr-v102</span></div>
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"13px 16px"}}><span style={{fontSize:15,color:"var(--t2)"}}>Version</span><span style={{fontSize:15,color:"var(--t1)",fontWeight:500}}>pr-v103</span></div>
             <div style={{height:"0.5px",background:"var(--sep)"}}/>
             <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"13px 16px"}}><span style={{fontSize:15,color:"var(--t2)"}}>Storage</span><span style={{fontSize:15,color:"var(--t1)",fontWeight:500}}>Supabase</span></div>
           </div>
@@ -1305,7 +1305,7 @@ ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
 </script>
 <script>
 if("serviceWorker"in navigator){
-  const sw='const C="pr-v102",A=[self.location.pathname];self.addEventListener("install",e=>{e.waitUntil(caches.open(C).then(c=>c.addAll(A)));self.skipWaiting();});self.addEventListener("activate",e=>{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==C).map(k=>caches.delete(k)))));self.clients.claim();});self.addEventListener("fetch",e=>{if(e.request.url.includes("supabase.co")){e.respondWith(fetch(e.request));return;}e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request).then(res=>{const cl=res.clone();caches.open(C).then(c=>c.put(e.request,cl));return res;})));});';
+  const sw='const C="pr-v103",A=[self.location.pathname];self.addEventListener("install",e=>{e.waitUntil(caches.open(C).then(c=>c.addAll(A)));self.skipWaiting();});self.addEventListener("activate",e=>{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==C).map(k=>caches.delete(k)))));self.clients.claim();});self.addEventListener("fetch",e=>{if(e.request.url.includes("supabase.co")){e.respondWith(fetch(e.request));return;}e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request).then(res=>{const cl=res.clone();caches.open(C).then(c=>c.put(e.request,cl));return res;})));});';
   navigator.serviceWorker.register(URL.createObjectURL(new Blob([sw],{type:"application/javascript"})),{scope:"./"}).catch(e=>console.warn(e));
 }
 </script>
