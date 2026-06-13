@@ -112,6 +112,9 @@ async function sbGetAllDayKeys(prefix){
 const PILL_LIST_KEY="pr:list",ARCHIVED_KEY="pr:archived",PROFILE_KEY="pr:profile";
 const dayKey=d=>`pr:day:${d}`;
 const asNeededDayKey=d=>`pr:asneeded:${d}`;
+const startOfTodayTs=()=>{const d=new Date();d.setHours(0,0,0,0);return d.getTime();};
+const todayOnlyTs=arr=>[...new Set((arr||[]).filter(t=>t>=startOfTodayTs()))].sort((a,b)=>a-b);
+const cleanMapToday=m=>{const o={};for(const k in (m||{}))o[k]=todayOnlyTs(m[k]);return o;};
 
 function fmtTime(ts){const d=new Date(ts);return String(d.getHours()).padStart(2,"0")+":"+String(d.getMinutes()).padStart(2,"0");}
 function todayStr(){const d=new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");}
@@ -799,7 +802,7 @@ function SettingsView({profile,setProfile,pillList,archived,setPillList,setArchi
           <div style={{background:"var(--card)",borderRadius:16,overflow:"hidden",boxShadow:"var(--shadow-sm)"}}>
             <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"13px 16px"}}><span style={{fontSize:15,color:"var(--t2)"}}>App</span><span style={{fontSize:15,color:"var(--t1)",fontWeight:500}}>Posology</span></div>
             <div style={{height:"0.5px",background:"var(--sep)"}}/>
-            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"13px 16px"}}><span style={{fontSize:15,color:"var(--t2)"}}>Version</span><span style={{fontSize:15,color:"var(--t1)",fontWeight:500}}>pr-v105</span></div>
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"13px 16px"}}><span style={{fontSize:15,color:"var(--t2)"}}>Version</span><span style={{fontSize:15,color:"var(--t1)",fontWeight:500}}>pr-v106</span></div>
             <div style={{height:"0.5px",background:"var(--sep)"}}/>
             <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"13px 16px"}}><span style={{fontSize:15,color:"var(--t2)"}}>Storage</span><span style={{fontSize:15,color:"var(--t1)",fontWeight:500}}>Supabase</span></div>
           </div>
@@ -937,7 +940,8 @@ function App(){
         const recent=(arr||[]).filter(t=>t>cutoff);
         if(recent.length>0)tsMerged[id]=[...recent,...(tsMerged[id]||[])].sort((a,b)=>a-b);
       }
-      setAsNeededTs(tsMerged);
+      const tsClean={};for(const[id,arr] of Object.entries(tsMerged)){tsClean[id]=[...new Set(arr||[])].sort((a,b)=>a-b);}
+      setAsNeededTs(tsClean);
       setLoading(false);
     })();
   },[]);
@@ -1013,11 +1017,11 @@ function App(){
   async function takeAsNeeded(id){
     const ts=Date.now();const today=todayStr();
     const existing=asNeededTs[id]||[];
-    const newTs={...asNeededTs,[id]:[...existing,ts]};
+    const newTs={...asNeededTs,[id]:[...new Set([...existing,ts])].sort((a,b)=>a-b)};
     setAsNeededTs(newTs);
-    await sbSet(asNeededDayKey(today),newTs);
+    await sbSet(asNeededDayKey(today),cleanMapToday(newTs));
     const logExisting=todayLog.as_needed?.[id]||[];
-    const newLog={...todayLog,as_needed:{...todayLog.as_needed,[id]:[...logExisting,ts]}};
+    const newLog={...todayLog,as_needed:cleanMapToday({...todayLog.as_needed,[id]:[...new Set([...logExisting,ts])]})};
     setTodayLog(newLog);await sbSet(dayKey(today),newLog);
     setFlash(id);setTimeout(()=>setFlash(null),400);
   }
@@ -1226,11 +1230,11 @@ function App(){
         const pid=detailSheet.pill.id;
         const timestamps=asNeededTs[pid]||[];
         async function updateTimestamps(newTs){
-          const sorted=[...newTs].sort((a,b)=>a-b);
+          const sorted=[...new Set(newTs)].sort((a,b)=>a-b);
           const newAsNeededTs={...asNeededTs,[pid]:sorted};
           setAsNeededTs(newAsNeededTs);
-          await sbSet(asNeededDayKey(todayStr()),newAsNeededTs);
-          const newLog={...todayLog,as_needed:{...todayLog.as_needed,[pid]:sorted}};
+          await sbSet(asNeededDayKey(todayStr()),cleanMapToday(newAsNeededTs));
+          const newLog={...todayLog,as_needed:cleanMapToday({...todayLog.as_needed,[pid]:sorted})};
           setTodayLog(newLog);await sbSet(dayKey(todayStr()),newLog);
         }
         function tsToTimeInput(ts){const d=new Date(ts);return String(d.getHours()).padStart(2,"0")+":"+String(d.getMinutes()).padStart(2,"0");}
@@ -1242,7 +1246,7 @@ function App(){
               <div style={{padding:"13px 16px",color:"var(--t3)",fontSize:14,fontStyle:"italic"}}>No doses logged today</div>
             )}
             {timestamps.map((ts,i)=>{const ordinals=["1st","2nd","3rd","4th","5th","6th","7th","8th"];const ord=ordinals[i]||(i+1)+"th";return(
-              <div key={ts} style={{position:"relative"}}>
+              <div key={ts+"-"+i} style={{position:"relative"}}>
                 {i>0&&<div style={{position:"absolute",top:0,left:16,right:0,height:"0.5px",background:"var(--sep)"}}/>}
                 <div style={{display:"flex",alignItems:"center",gap:10,padding:"11px 16px"}}>
                   <span style={{fontSize:13,fontWeight:500,color:"var(--t2)",minWidth:52}}>{ord} dose</span>
@@ -1303,7 +1307,7 @@ ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
 </script>
 <script>
 if("serviceWorker"in navigator){
-  const sw='const C="pr-v105",A=[self.location.pathname];self.addEventListener("install",e=>{e.waitUntil(caches.open(C).then(c=>c.addAll(A)));self.skipWaiting();});self.addEventListener("activate",e=>{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==C).map(k=>caches.delete(k)))));self.clients.claim();});self.addEventListener("fetch",e=>{if(e.request.url.includes("supabase.co")){e.respondWith(fetch(e.request));return;}e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request).then(res=>{const cl=res.clone();caches.open(C).then(c=>c.put(e.request,cl));return res;})));});';
+  const sw='const C="pr-v106",A=[self.location.pathname];self.addEventListener("install",e=>{e.waitUntil(caches.open(C).then(c=>c.addAll(A)));self.skipWaiting();});self.addEventListener("activate",e=>{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==C).map(k=>caches.delete(k)))));self.clients.claim();});self.addEventListener("fetch",e=>{if(e.request.url.includes("supabase.co")){e.respondWith(fetch(e.request));return;}e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request).then(res=>{const cl=res.clone();caches.open(C).then(c=>c.put(e.request,cl));return res;})));});';
   navigator.serviceWorker.register(URL.createObjectURL(new Blob([sw],{type:"application/javascript"})),{scope:"./"}).catch(e=>console.warn(e));
 }
 </script>
