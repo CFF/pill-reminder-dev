@@ -803,7 +803,7 @@ function SettingsView({profile,setProfile,pillList,archived,setPillList,setArchi
           <div style={{background:"var(--card)",borderRadius:16,overflow:"hidden",boxShadow:"var(--shadow-sm)"}}>
             <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"13px 16px"}}><span style={{fontSize:15,color:"var(--t2)"}}>App</span><span style={{fontSize:15,color:"var(--t1)",fontWeight:500}}>Posology</span></div>
             <div style={{height:"0.5px",background:"var(--sep)"}}/>
-            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"13px 16px"}}><span style={{fontSize:15,color:"var(--t2)"}}>Version</span><span style={{fontSize:15,color:"var(--t1)",fontWeight:500}}>pr-v108</span></div>
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"13px 16px"}}><span style={{fontSize:15,color:"var(--t2)"}}>Version</span><span style={{fontSize:15,color:"var(--t1)",fontWeight:500}}>pr-v109</span></div>
             <div style={{height:"0.5px",background:"var(--sep)"}}/>
             <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"13px 16px"}}><span style={{fontSize:15,color:"var(--t2)"}}>Storage</span><span style={{fontSize:15,color:"var(--t1)",fontWeight:500}}>Supabase</span></div>
           </div>
@@ -901,6 +901,7 @@ function App(){
     return()=>{observers.forEach(o=>o.disconnect());window.removeEventListener("scroll",onScroll);};
   },[newTipLabels]);
   const [loading,setLoading]=useState(true);
+  const [loadError,setLoadError]=useState(false);
   const [selectedDay,setSelectedDay]=useState(null);
   const [installPrompt,setInstallPrompt]=useState(null);
   const [installed,setInstalled]=useState(false);
@@ -914,9 +915,9 @@ function App(){
   useEffect(()=>{const t=setInterval(()=>setNow(Date.now()),30000);return()=>clearInterval(t);},[]);
   useEffect(()=>{const h=e=>{e.preventDefault();setInstallPrompt(e);};window.addEventListener("beforeinstallprompt",h);window.addEventListener("appinstalled",()=>{setInstalled(true);setInstallPrompt(null);});return()=>window.removeEventListener("beforeinstallprompt",h);},[]);
 
-  useEffect(()=>{
-    if(!USER_TOKEN){setLoading(false);return;}
-    (async()=>{
+  const loadData=useCallback(async()=>{
+    setLoadError(false);setLoading(true);
+    try{
       let list=await sbGet(PILL_LIST_KEY)||DEFAULT_PILLS;
       if(list.night&&!list.evening){list={...list,evening:list.night,lunch:list.lunch||[]};delete list.night;}
       if(!list.lunch)list={...list,lunch:[]};
@@ -944,8 +945,17 @@ function App(){
       }
       const tsClean={};for(const[id,arr] of Object.entries(tsMerged)){tsClean[id]=[...new Set(arr||[])].sort((a,b)=>a-b);}
       setAsNeededTs(tsClean);
+    }catch(e){
+      console.warn("load failed",e);
+      setLoadError(true);
+    }finally{
       setLoading(false);
-    })();
+    }
+  },[]);
+
+  useEffect(()=>{
+    if(!USER_TOKEN){setLoading(false);return;}
+    loadData();
   },[]);
 
   function buildEmptyLog(list){
@@ -1051,6 +1061,11 @@ function App(){
 
   const sessions=pillList?[{key:"morning",label:"Morning",Icon:IconSunrise,accent:"var(--acc)"},{key:"lunch",label:"Lunch",Icon:IconSun,accent:"var(--acc)"},{key:"evening",label:"Evening",Icon:IconMoon,accent:"var(--acc)"}]:[];
 
+  if(loadError)return(<div style={{minHeight:"100vh",background:"var(--bg)",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:32,textAlign:"center"}}>
+    <div style={{fontSize:17,fontWeight:600,color:"var(--t1)",marginBottom:8}}>Connection problem</div>
+    <div style={{fontSize:14,color:"var(--t2)",marginBottom:24,maxWidth:280,lineHeight:1.5}}>Couldn't load your data. Check your connection and try again.</div>
+    <button onClick={()=>loadData()} style={{background:"var(--acc)",color:"#fff",border:"none",borderRadius:12,padding:"12px 28px",fontSize:15,fontWeight:600,cursor:"pointer",fontFamily:"inherit"}}>Retry</button>
+  </div>);
   if(loading)return(<div style={{minHeight:"100vh",background:"var(--bg)",display:"flex",alignItems:"center",justifyContent:"center"}}><div style={{color:"var(--t2)",fontSize:14}}>Loading…</div></div>);
   if(!USER_TOKEN)return <NoTokenView/>;
   if(view==="history")return(<><HistoryView view={view} setView={setView} selectedDay={selectedDay} setSelectedDay={setSelectedDay} history={history} setHistory={setHistory} pillList={pillList} archived={archived} sessions={sessions} toggleHistoryTaken={toggleHistoryTaken}/><TabBar view={view} setView={setView} setSelectedDay={setSelectedDay} hasNewTips={false}/></>);
@@ -1341,7 +1356,7 @@ ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
 </script>
 <script>
 if("serviceWorker"in navigator){
-  const sw='const C="pr-v108",A=[self.location.pathname];self.addEventListener("install",e=>{e.waitUntil(caches.open(C).then(c=>c.addAll(A)));self.skipWaiting();});self.addEventListener("activate",e=>{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==C).map(k=>caches.delete(k)))));self.clients.claim();});self.addEventListener("fetch",e=>{if(e.request.url.includes("supabase.co")){e.respondWith(fetch(e.request));return;}e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request).then(res=>{const cl=res.clone();caches.open(C).then(c=>c.put(e.request,cl));return res;})));});';
+  const sw='const C="pr-v109",A=[self.location.pathname];self.addEventListener("install",e=>{e.waitUntil(caches.open(C).then(c=>c.addAll(A)));self.skipWaiting();});self.addEventListener("activate",e=>{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==C).map(k=>caches.delete(k)))));self.clients.claim();});self.addEventListener("fetch",e=>{if(e.request.url.includes("supabase.co")){e.respondWith(fetch(e.request));return;}e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request).then(res=>{const cl=res.clone();caches.open(C).then(c=>c.put(e.request,cl));return res;})));});';
   navigator.serviceWorker.register(URL.createObjectURL(new Blob([sw],{type:"application/javascript"})),{scope:"./"}).catch(e=>console.warn(e));
 }
 </script>
