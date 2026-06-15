@@ -66,19 +66,6 @@ To verify in the Supabase dashboard (cannot be tested from Claude's environment)
 
 ---
 
-## Design tokens
+## Design system
 
-> Planned to migrate to DESIGN.md when that file is created.
-
-`var(--acc)` orange — in-progress
-`var(--acc-soft)` — light orange background
-`var(--green)` — fully complete
-`var(--blue)` — new / informational
-`var(--red)` — destructive
-`var(--t1)` / `var(--t2)` — primary / secondary text (`--t3` too low contrast, avoid on small text)
-`var(--sep)` / `var(--sep-strong)` — separators (use strong for disclaimers and tip card borders)
-`var(--card)` / `var(--bg)` / `var(--bg2)` — surfaces
-
-Fonts: DM Serif Display (titles) + system font (body)
-Pill cards: border-radius 18px. Group cards: 16px.
-iOS HIG: 44px tap targets, `env(safe-area-inset-*)` for all edges.
+Color tokens, typography, component conventions, and known design debt now live in **DESIGN.md**.
