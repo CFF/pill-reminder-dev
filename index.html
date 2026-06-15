@@ -469,7 +469,7 @@ const HEALTH_ASSISTANT_API_KEY=_k1+_k2;
 function HealthAssistant({pillList,profile,onClose,msgs,setMsgs}){
   const [input,setInput]=React.useState("");
   const [loading,setLoading]=React.useState(false);
-  const [err,setErr]=React.useState(false);
+  const [err,setErr]=React.useState(null);
   const [kb,setKb]=React.useState(0);
   const bottomRef=React.useRef(null);
   const inputRef=React.useRef(null);
@@ -497,13 +497,13 @@ function HealthAssistant({pillList,profile,onClose,msgs,setMsgs}){
   const SUGGESTIONS=["Side effects?","Foods to avoid?","Drug interactions?"];
 
   async function runApi(currentMsgs){
-    setErr(false);setLoading(true);
+    setErr(null);setLoading(true);
     try{
       const res=await fetch("https://fotzkqkghxndjnomrspr.supabase.co/functions/v1/nurse-chat",{method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZvdHprcWtnaHhuZGpub21yc3ByIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA4MTg0MTMsImV4cCI6MjA5NjM5NDQxM30.o8AyVFlhd_g0NbdB1hd28x8ERxmCO4OjXPuwVoCJano"},body:JSON.stringify({system:systemPrompt,messages:currentMsgs.map(m=>({role:m.role,content:m.content}))})});
       const data=await res.json();
-      if(!res.ok){setErr(true);}
+      if(!res.ok){setErr(data?.error?.message||data?.error||("HTTP "+res.status));}
       else{const reply=data.content?.[0]?.text||"I couldn't process that. Please try again.";setMsgs(prev=>[...prev,{role:"assistant",content:reply}]);}
-    }catch(e){setErr(true);}
+    }catch(e){setErr(e.message||"network error");}
     setLoading(false);
   }
   function send(text){
@@ -558,6 +558,7 @@ function HealthAssistant({pillList,profile,onClose,msgs,setMsgs}){
           {err&&(
             <div style={{marginBottom:26}}>
               <div style={{fontSize:15,color:"var(--t2)",lineHeight:1.5}}>That didn't go through. Check your connection and try again.</div>
+              {typeof err==="string"&&<div style={{fontSize:11,color:"var(--t3)",marginTop:6,wordBreak:"break-word"}}>detail: {err}</div>}
               <button onClick={retry} style={{display:"inline-flex",alignItems:"center",gap:6,marginTop:10,background:"var(--acc-soft)",color:"var(--acc)",border:"none",borderRadius:100,padding:"8px 16px",fontFamily:"inherit",fontSize:14,fontWeight:600,cursor:"pointer"}}>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--acc)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg>
                 Retry
@@ -780,7 +781,7 @@ function SettingsView({profile,setProfile,pillList,archived,setPillList,setArchi
           <div style={{background:"var(--card)",borderRadius:16,overflow:"hidden",boxShadow:"var(--shadow-sm)"}}>
             <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"13px 16px"}}><span style={{fontSize:15,color:"var(--t2)"}}>App</span><span style={{fontSize:15,color:"var(--t1)",fontWeight:500}}>Posology</span></div>
             <div style={{height:"0.5px",background:"var(--sep)"}}/>
-            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"13px 16px"}}><span style={{fontSize:15,color:"var(--t2)"}}>Version</span><span style={{fontSize:15,color:"var(--t1)",fontWeight:500}}>pr-v116</span></div>
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"13px 16px"}}><span style={{fontSize:15,color:"var(--t2)"}}>Version</span><span style={{fontSize:15,color:"var(--t1)",fontWeight:500}}>pr-v117</span></div>
             <div style={{height:"0.5px",background:"var(--sep)"}}/>
             <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"13px 16px"}}><span style={{fontSize:15,color:"var(--t2)"}}>Storage</span><span style={{fontSize:15,color:"var(--t1)",fontWeight:500}}>Supabase</span></div>
           </div>
@@ -1334,7 +1335,7 @@ ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
 </script>
 <script>
 if("serviceWorker"in navigator){
-  const sw='const C="pr-v116",A=[self.location.pathname];self.addEventListener("install",e=>{e.waitUntil(caches.open(C).then(c=>c.addAll(A)));self.skipWaiting();});self.addEventListener("activate",e=>{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==C).map(k=>caches.delete(k)))));self.clients.claim();});self.addEventListener("fetch",e=>{if(e.request.url.includes("supabase.co")){e.respondWith(fetch(e.request));return;}e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request).then(res=>{const cl=res.clone();caches.open(C).then(c=>c.put(e.request,cl));return res;})));});';
+  const sw='const C="pr-v117",A=[self.location.pathname];self.addEventListener("install",e=>{e.waitUntil(caches.open(C).then(c=>c.addAll(A)));self.skipWaiting();});self.addEventListener("activate",e=>{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==C).map(k=>caches.delete(k)))));self.clients.claim();});self.addEventListener("fetch",e=>{if(e.request.url.includes("supabase.co")){e.respondWith(fetch(e.request));return;}e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request).then(res=>{const cl=res.clone();caches.open(C).then(c=>c.put(e.request,cl));return res;})));});';
   navigator.serviceWorker.register(URL.createObjectURL(new Blob([sw],{type:"application/javascript"})),{scope:"./"}).catch(e=>console.warn(e));
 }
 </script>
