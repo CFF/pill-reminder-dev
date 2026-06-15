@@ -60,7 +60,7 @@
     .fade-up{animation:fadeUp 0.3s cubic-bezier(0.22,1,0.36,1) both;}
     @keyframes pillIn{from{opacity:0;transform:translateY(8px) scale(0.98)}to{opacity:1;transform:translateY(0) scale(1)}}
     .pill-card{animation:pillIn 0.32s cubic-bezier(0.22,1,0.36,1) both;}
-    @keyframes spin{to{transform:rotate(360deg)}} @keyframes sheetUp{from{transform:translateY(100%)}to{transform:translateY(0)}} @keyframes bounce{0%,60%,100%{transform:translateY(0)}30%{transform:translateY(-6px)}}
+    @keyframes spin{to{transform:rotate(360deg)}} @keyframes sheetUp{from{transform:translateY(100%)}to{transform:translateY(0)}} @keyframes bounce{0%,60%,100%{transform:translateY(0)}30%{transform:translateY(-6px)}} @keyframes nfade{0%,100%{opacity:.25}50%{opacity:.85}}
     .ring-fill{transition:stroke-dashoffset 0.8s cubic-bezier(0.4,0,0.2,1);}
     .row-press:active{background:var(--bg2)!important;transition:none;}
     .pill-press:active{transform:scale(0.985);transition:transform 0.1s;}
@@ -469,6 +469,7 @@ const HEALTH_ASSISTANT_API_KEY=_k1+_k2;
 function HealthAssistant({pillList,profile,onClose,msgs,setMsgs}){
   const [input,setInput]=React.useState("");
   const [loading,setLoading]=React.useState(false);
+  const [err,setErr]=React.useState(false);
   const [kb,setKb]=React.useState(0);
   const bottomRef=React.useRef(null);
   const inputRef=React.useRef(null);
@@ -491,119 +492,99 @@ function HealthAssistant({pillList,profile,onClose,msgs,setMsgs}){
 
   const systemPrompt=`You are a compassionate, knowledgeable health assistant — like a caring, experienced nurse.\n\nUser's current medications: ${pillSummary}\nUser profile: ${profileSummary}\n\nYour role:\n- Inform and explain clearly, using simple language\n- Be warm, empathetic, and supportive\n- You can receive the user's diagnosis or context — acknowledge it compassionately\n- Never give a personal medical opinion or recommendation\n- Never tell the user to change, stop, or adjust their treatment\n- When relevant, gently remind them to consult their doctor\n- Stay focused on health topics related to their treatment and general wellness\n- If asked something outside your scope, kindly say so\n\nAlways answer in the language the user writes in.`;
 
-  const introMsg={role:"assistant",content:"Hi, I'm here to help you understand your treatment and answer any health questions you have.\n\nI can explain how your medications work, what to expect, dietary tips, or anything related to your health. I'm here to inform and support — not to give advice.\n\nWhat would you like to know?"};
-
-  React.useEffect(()=>{if(!msgs||msgs.length===0)setMsgs([introMsg]);},[]);
-  React.useEffect(()=>{bottomRef.current?.scrollIntoView({behavior:"smooth"});},[msgs,loading]);
+  React.useEffect(()=>{bottomRef.current?.scrollIntoView({behavior:"smooth"});},[msgs,loading,err]);
 
   const SUGGESTIONS=["Side effects?","Foods to avoid?","Drug interactions?"];
 
-  async function send(text){
+  async function runApi(currentMsgs){
+    setErr(false);setLoading(true);
+    try{
+      const res=await fetch("https://fotzkqkghxndjnomrspr.supabase.co/functions/v1/nurse-chat",{method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZvdHprcWtnaHhuZGpub21yc3ByIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA4MTg0MTMsImV4cCI6MjA5NjM5NDQxM30.o8AyVFlhd_g0NbdB1hd28x8ERxmCO4OjXPuwVoCJano"},body:JSON.stringify({system:systemPrompt,messages:currentMsgs.map(m=>({role:m.role,content:m.content}))})});
+      const data=await res.json();
+      if(!res.ok){setErr(true);}
+      else{const reply=data.content?.[0]?.text||"I couldn't process that. Please try again.";setMsgs(prev=>[...prev,{role:"assistant",content:reply}]);}
+    }catch(e){setErr(true);}
+    setLoading(false);
+  }
+  function send(text){
     const q=text||input.trim();
     if(!q||loading)return;
     setInput("");
     const newMsgs=[...msgs,{role:"user",content:q}];
     setMsgs(newMsgs);
-    setLoading(true);
-    try{
-      const apiMsgs=newMsgs.filter(m=>m.role!=="assistant"||m!==introMsg);
-      const res=await fetch("https://fotzkqkghxndjnomrspr.supabase.co/functions/v1/nurse-chat",{method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZvdHprcWtnaHhuZGpub21yc3ByIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA4MTg0MTMsImV4cCI6MjA5NjM5NDQxM30.o8AyVFlhd_g0NbdB1hd28x8ERxmCO4OjXPuwVoCJano"},body:JSON.stringify({system:systemPrompt,messages:apiMsgs.map(m=>({role:m.role,content:m.content}))})});
-      const data=await res.json();
-      if(!res.ok){
-        const errMsg=data?.error?.message||"API error "+res.status;
-        setMsgs(prev=>[...prev,{role:"assistant",content:"⚠️ "+errMsg}]);
-      } else {
-        const reply=data.content?.[0]?.text||"I couldn't process that. Please try again.";
-        setMsgs(prev=>[...prev,{role:"assistant",content:reply}]);
-      }
-    }catch(e){
-      setMsgs(prev=>[...prev,{role:"assistant",content:"⚠️ "+( e.message||"Load failed — check connection")}]);
-    }
-    setLoading(false);
+    runApi(newMsgs);
   }
+  function retry(){if(loading)return;runApi(msgs);}
 
-  const RobotIcon=({size=16,col="currentColor"})=>(
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={col} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="3" y="11" width="18" height="10" rx="2"/>
-      <path d="M12 11V7"/><circle cx="12" cy="5" r="2"/>
-      <circle cx="8.5" cy="15" r="1" fill={col} stroke="none"/>
-      <circle cx="15.5" cy="15" r="1" fill={col} stroke="none"/>
-      <path d="M9 19h6"/><path d="M3 15H1M23 15h-2"/>
-    </svg>
-  );
+  const renderRich=(content)=>content.split("\n\n").filter(p=>p.trim()).map((p,j)=>{
+    const parts=p.split(/(\*\*[^*]+\*\*)/g);
+    return(<p key={j} style={{margin:j>0?"11px 0 0":0}}>{parts.map((pt,k)=>pt.startsWith("**")&&pt.endsWith("**")?<strong key={k}>{pt.slice(2,-2)}</strong>:pt)}</p>);
+  });
 
   return(
-    <div style={{minHeight:"100vh",background:"var(--bg)",paddingBottom:"calc(120px + env(safe-area-inset-bottom,0px))"}} className="fade-up">
-      <div style={{position:"sticky",top:0,zIndex:50,background:"var(--card)",borderBottom:"0.5px solid var(--sep)",paddingTop:"calc(env(safe-area-inset-top,20px) + 12px)"}}>
-        <div style={{padding:"0 20px 12px",display:"flex",alignItems:"center",gap:12}}>
-          <div style={{width:40,height:40,borderRadius:12,background:"var(--acc-soft)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
-            <RobotIcon size={20} col="var(--acc)"/>
-          </div>
-          <div style={{flex:1}}>
-            <div style={{fontSize:17,fontWeight:700,color:"var(--t1)"}}>Health Assistant</div>
-            <div style={{fontSize:12,color:"var(--t2)",marginTop:1}}>Informative · Not medical advice</div>
-          </div>
-        </div>
-        {allPills.length>0&&(
-          <div style={{padding:"8px 20px",background:"var(--acc-soft)",display:"flex",alignItems:"center",gap:6}}>
-            <span style={{fontSize:12,color:"var(--acc-text,var(--acc))",fontWeight:500,lineHeight:1.4}}>Aware of your treatment: {pillSummary}</span>
-          </div>
-        )}
+    <div style={{minHeight:"100vh",background:"var(--bg)",paddingBottom:"calc(165px + env(safe-area-inset-bottom,0px))"}} className="fade-up">
+      <div style={{background:"var(--card)",borderRadius:"0 0 24px 24px",boxShadow:"var(--shadow-md)",marginBottom:6,paddingTop:"calc(env(safe-area-inset-top,20px) + 20px)",paddingBottom:18,paddingLeft:20,paddingRight:20,backgroundImage:"radial-gradient(ellipse at 110% -10%, var(--acc-glow) 0%, transparent 60%)"}}>
+        <h1 className="serif" style={{fontSize:34,fontWeight:400,color:"var(--t1)",letterSpacing:"-0.01em",lineHeight:1.1,margin:0}}>Health Assistant</h1>
       </div>
+      {allPills.length>0&&(
+        <div style={{padding:"12px 22px 0",fontSize:12.5,color:"var(--t2)",lineHeight:1.4}}>Aware of your treatment: <span style={{color:"var(--t1)",fontWeight:600}}>{pillSummary}</span></div>
+      )}
 
-      <div style={{padding:"16px 20px",display:"flex",flexDirection:"column",gap:12}}>
-        {msgs.map((m,i)=>(
-          <div key={i} style={{display:"flex",gap:8,flexDirection:m.role==="user"?"row-reverse":"row",alignItems:"flex-start",marginTop:4}}>
-            {m.role==="assistant"&&(
-              <div style={{width:28,height:28,borderRadius:"50%",background:"var(--acc-soft)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,marginBottom:2}}>
-                <RobotIcon size={14} col="var(--acc)"/>
-              </div>
-            )}
-            <div style={{maxWidth:"82%",padding:"10px 13px",borderRadius:14,fontSize:14,lineHeight:1.55,background:m.role==="user"?"var(--acc)":"var(--bg2)",color:m.role==="user"?"#fff":"var(--t1)",borderBottomRightRadius:m.role==="user"?4:14,borderBottomLeftRadius:m.role==="assistant"?4:14,boxShadow:"0 1px 3px rgba(0,0,0,0.07)"}}>
-              {m.content.split("\n\n").filter(p=>p.trim()).map((p,j)=>{
-                const parts=p.split(/(\*\*[^*]+\*\*)/g);
-                return(<p key={j} style={{margin:j>0?"8px 0 0":0}}>{parts.map((pt,k)=>pt.startsWith("**")&&pt.endsWith("**")?<strong key={k}>{pt.slice(2,-2)}</strong>:pt)}</p>);
-              })}
-              {m.role==="assistant"&&i>0&&(
-                <p style={{margin:"8px 0 0",paddingTop:6,borderTop:"0.5px solid var(--sep)",fontSize:11,color:"var(--t2)",fontStyle:"italic"}}>For information only — consult your doctor for medical decisions.</p>
-              )}
-            </div>
-          </div>
-        ))}
-        {loading&&(
-          <div style={{display:"flex",gap:8,alignItems:"flex-end"}}>
-            <div style={{width:28,height:28,borderRadius:"50%",background:"var(--acc-soft)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
-              <RobotIcon size={14} col="var(--acc)"/>
-            </div>
-            <div style={{background:"var(--bg2)",borderRadius:14,borderBottomLeftRadius:4,padding:"12px 16px",display:"flex",gap:5,alignItems:"center",boxShadow:"0 1px 3px rgba(0,0,0,0.07)"}}>
-              {[0,1,2].map(d=>(<div key={d} style={{width:7,height:7,borderRadius:"50%",background:"var(--t3)",animation:"bounce 1.2s infinite",animationDelay:d*0.2+"s"}}/>))}
-            </div>
-          </div>
-        )}
-        {msgs.length===1&&!loading&&(
-          <div style={{display:"flex",flexWrap:"wrap",gap:8,marginTop:4}}>
+      {msgs.length===0&&!loading&&!err?(
+        <div style={{display:"flex",flexDirection:"column",alignItems:"center",textAlign:"center",padding:"52px 32px 40px"}}>
+          <div style={{width:74,height:74,borderRadius:"50%",background:"var(--acc)",boxShadow:"0 0 0 7px var(--bg), 0 0 0 8.5px var(--acc-soft)",marginBottom:30}}/>
+          <h2 className="serif" style={{fontSize:27,fontWeight:400,color:"var(--t1)",letterSpacing:"-0.01em",lineHeight:1.2,margin:"0 0 12px",maxWidth:300}}>How can I help?</h2>
+          <p style={{fontSize:15,lineHeight:1.5,color:"var(--t2)",margin:"0 0 30px",maxWidth:300}}>Ask me anything about your treatment: your meds, side effects, or daily care.</p>
+          <div style={{display:"flex",flexWrap:"wrap",gap:9,justifyContent:"center",maxWidth:320}}>
             {SUGGESTIONS.map(s=>(
-              <button key={s} onClick={()=>send(s)} style={{background:"var(--card)",border:"1px solid var(--sep)",borderRadius:20,padding:"7px 13px",fontSize:13,color:"var(--t2)",cursor:"pointer",fontFamily:"inherit"}}>{s}</button>
+              <button key={s} onClick={()=>send(s)} style={{background:"var(--card)",border:"1px solid var(--sep)",borderRadius:100,padding:"9px 15px",fontSize:13.5,fontWeight:500,color:"var(--t2)",cursor:"pointer",fontFamily:"inherit"}}>{s}</button>
             ))}
           </div>
-        )}
-        <div ref={bottomRef}/>
-      </div>
-
-      <div style={{position:"fixed",bottom:kb>0?kb+"px":"calc(59px + env(safe-area-inset-bottom,16px))",left:0,right:0,padding:"10px 16px",borderTop:"0.5px solid var(--sep)",background:"var(--card)",display:"flex",gap:8,alignItems:"flex-end",zIndex:600,transition:"bottom 0.1s ease-out"}}>
-        <div style={{flex:1,background:"var(--bg2)",borderRadius:22,padding:"10px 14px",display:"flex",alignItems:"center"}}>
-          <textarea ref={inputRef} value={input} onChange={e=>setInput(e.target.value)}
-            onKeyDown={e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();send();}}}
-            onBlur={()=>setTimeout(()=>setKb(0),100)}
-            placeholder="Ask a question…" rows={1}
-            style={{flex:1,border:"none",outline:"none",background:"transparent",fontFamily:"inherit",fontSize:16,color:"var(--t1)",resize:"none",maxHeight:100,lineHeight:1.4,overflowY:"auto",minWidth:0}}
-            onInput={e=>{e.target.style.height="auto";e.target.style.height=Math.min(e.target.scrollHeight,100)+"px";}}
-          />
         </div>
-        <button onClick={()=>send()} disabled={!input.trim()||loading}
-          style={{width:42,height:42,borderRadius:"50%",background:"var(--acc)",border:"none",cursor:input.trim()&&!loading?"pointer":"default",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,opacity:input.trim()&&!loading?1:0.4,transition:"opacity 0.15s"}}>
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
-        </button>
+      ):(
+        <div style={{padding:"20px 22px 0"}}>
+          {msgs.map((m,i)=>(m.role==="user"?(
+            <div key={i} style={{display:"flex",justifyContent:"flex-end",marginBottom:26}}>
+              <div style={{background:"var(--bg2)",color:"var(--t1)",padding:"11px 15px",borderRadius:20,borderBottomRightRadius:6,fontSize:15,lineHeight:1.5,maxWidth:"80%",whiteSpace:"pre-wrap"}}>{m.content}</div>
+            </div>
+          ):(
+            <div key={i} style={{marginBottom:26,fontSize:16.5,lineHeight:1.62,color:"var(--t1)",letterSpacing:"-0.005em"}}>{renderRich(m.content)}</div>
+          )))}
+          {loading&&(
+            <div style={{display:"flex",gap:5,paddingLeft:2,marginBottom:26}}>
+              {[0,1,2].map(d=>(<div key={d} style={{width:6,height:6,borderRadius:"50%",background:"var(--t2)",animation:"nfade 1.3s ease-in-out infinite",animationDelay:d*0.22+"s"}}/>))}
+            </div>
+          )}
+          {err&&(
+            <div style={{marginBottom:26}}>
+              <div style={{fontSize:15,color:"var(--t2)",lineHeight:1.5}}>That didn't go through. Check your connection and try again.</div>
+              <button onClick={retry} style={{display:"inline-flex",alignItems:"center",gap:6,marginTop:10,background:"var(--acc-soft)",color:"var(--acc)",border:"none",borderRadius:100,padding:"8px 16px",fontFamily:"inherit",fontSize:14,fontWeight:600,cursor:"pointer"}}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--acc)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg>
+                Retry
+              </button>
+            </div>
+          )}
+          <div ref={bottomRef}/>
+        </div>
+      )}
+
+      <div style={{position:"fixed",bottom:kb>0?kb+"px":"calc(59px + env(safe-area-inset-bottom,16px))",left:0,right:0,background:"var(--card)",borderTop:"0.5px solid var(--sep)",zIndex:600,transition:"bottom 0.1s ease-out"}}>
+        <div style={{textAlign:"center",fontSize:11.5,color:"var(--t2)",lineHeight:1.45,padding:"8px 24px 2px"}}>This assistant uses AI and isn't medical advice.</div>
+        <div style={{padding:"6px 16px 10px",display:"flex",gap:8,alignItems:"flex-end"}}>
+          <div style={{flex:1,background:"var(--bg2)",borderRadius:22,padding:"10px 14px",display:"flex",alignItems:"center"}}>
+            <textarea ref={inputRef} value={input} onChange={e=>setInput(e.target.value)}
+              onKeyDown={e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();send();}}}
+              onBlur={()=>setTimeout(()=>setKb(0),100)}
+              placeholder="Ask a question…" rows={1}
+              style={{flex:1,border:"none",outline:"none",background:"transparent",fontFamily:"inherit",fontSize:16,color:"var(--t1)",resize:"none",maxHeight:100,lineHeight:1.4,overflowY:"auto",minWidth:0}}
+              onInput={e=>{e.target.style.height="auto";e.target.style.height=Math.min(e.target.scrollHeight,100)+"px";}}
+            />
+          </div>
+          <button onClick={()=>send()} disabled={!input.trim()||loading}
+            style={{width:42,height:42,borderRadius:"50%",background:"var(--acc)",border:"none",cursor:input.trim()&&!loading?"pointer":"default",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,opacity:input.trim()&&!loading?1:0.4,transition:"opacity 0.15s"}}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -611,7 +592,7 @@ function HealthAssistant({pillList,profile,onClose,msgs,setMsgs}){
 
 const IconTabNurse=({active})=><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={active?"2":"1.7"} strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M12 11V7"/><circle cx="12" cy="5" r="2"/><circle cx="8.5" cy="15" r="1" fill="currentColor" stroke="none"/><circle cx="15.5" cy="15" r="1" fill="currentColor" stroke="none"/><path d="M9 19h6"/><path d="M3 15H1M23 15h-2"/></svg>;
 
-const TABS=[{key:"today",label:"Today",Icon:IconTabToday},{key:"history",label:"History",Icon:IconTabHistory},{key:"nurse",label:"Nurse",Icon:IconTabNurse},{key:"settings",label:"Settings",Icon:IconTabSettings}];
+const TABS=[{key:"today",label:"Today",Icon:IconTabToday},{key:"history",label:"History",Icon:IconTabHistory},{key:"nurse",label:"Assistant",Icon:IconTabNurse},{key:"settings",label:"Settings",Icon:IconTabSettings}];
 
 function TabBar({view,setView,setSelectedDay,hasNewTips}){
   return(<div id="main-tabbar" style={{position:"fixed",bottom:0,left:0,right:0,zIndex:500,background:"var(--card)",borderTop:"0.5px solid var(--sep)",display:"flex",paddingBottom:"env(safe-area-inset-bottom,16px)",boxShadow:"0 -1px 12px rgba(0,0,0,0.07)"}}>
@@ -799,7 +780,7 @@ function SettingsView({profile,setProfile,pillList,archived,setPillList,setArchi
           <div style={{background:"var(--card)",borderRadius:16,overflow:"hidden",boxShadow:"var(--shadow-sm)"}}>
             <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"13px 16px"}}><span style={{fontSize:15,color:"var(--t2)"}}>App</span><span style={{fontSize:15,color:"var(--t1)",fontWeight:500}}>Posology</span></div>
             <div style={{height:"0.5px",background:"var(--sep)"}}/>
-            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"13px 16px"}}><span style={{fontSize:15,color:"var(--t2)"}}>Version</span><span style={{fontSize:15,color:"var(--t1)",fontWeight:500}}>pr-v114</span></div>
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"13px 16px"}}><span style={{fontSize:15,color:"var(--t2)"}}>Version</span><span style={{fontSize:15,color:"var(--t1)",fontWeight:500}}>pr-v115</span></div>
             <div style={{height:"0.5px",background:"var(--sep)"}}/>
             <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"13px 16px"}}><span style={{fontSize:15,color:"var(--t2)"}}>Storage</span><span style={{fontSize:15,color:"var(--t1)",fontWeight:500}}>Supabase</span></div>
           </div>
@@ -1353,7 +1334,7 @@ ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
 </script>
 <script>
 if("serviceWorker"in navigator){
-  const sw='const C="pr-v114",A=[self.location.pathname];self.addEventListener("install",e=>{e.waitUntil(caches.open(C).then(c=>c.addAll(A)));self.skipWaiting();});self.addEventListener("activate",e=>{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==C).map(k=>caches.delete(k)))));self.clients.claim();});self.addEventListener("fetch",e=>{if(e.request.url.includes("supabase.co")){e.respondWith(fetch(e.request));return;}e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request).then(res=>{const cl=res.clone();caches.open(C).then(c=>c.put(e.request,cl));return res;})));});';
+  const sw='const C="pr-v115",A=[self.location.pathname];self.addEventListener("install",e=>{e.waitUntil(caches.open(C).then(c=>c.addAll(A)));self.skipWaiting();});self.addEventListener("activate",e=>{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==C).map(k=>caches.delete(k)))));self.clients.claim();});self.addEventListener("fetch",e=>{if(e.request.url.includes("supabase.co")){e.respondWith(fetch(e.request));return;}e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request).then(res=>{const cl=res.clone();caches.open(C).then(c=>c.put(e.request,cl));return res;})));});';
   navigator.serviceWorker.register(URL.createObjectURL(new Blob([sw],{type:"application/javascript"})),{scope:"./"}).catch(e=>console.warn(e));
 }
 </script>
