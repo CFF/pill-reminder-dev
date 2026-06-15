@@ -29,6 +29,10 @@ Before any PUT to GitHub, answer each out loud. If any answer is "no", stop.
 
 ## CRITICAL WORKFLOW RULES
 
+### 0. Orient before proposing
+
+At the start of a work session, before proposing any change: note the current version (`pr-vNN`) of **both** dev and prod, and flag any feature divergence between them. Do not operate from a remembered mental map of repo state, it goes stale. One past session began with a wrong assumption about which features were where.
+
 ### 1. Always fetch fresh before patching
 
 Never reuse a previously fetched file from earlier in the session.
@@ -120,5 +124,5 @@ If a dose was taken at 23:54 yesterday and the minimum interval is 6h, the app m
 
 - **CLAUDE.md** (this file): how Claude operates. Gates, workflow rules, data invariants, gotchas.
 - **PRD.md**: what the product is and why. Vision, users, features, scope, product change protocol.
-- **SPECS.md**: technical reference. Stack, storage schema, architecture, data model, pill model, design tokens.
-- **DESIGN.md**: visual system. Planned, not yet created. Design tokens will migrate here when it exists.
+- **SPECS.md**: technical reference. Stack, storage schema, architecture, data model, pill model.
+- **DESIGN.md**: visual system. Identity, color, typography, component conventions, known design debt.
