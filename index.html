@@ -466,8 +466,7 @@ function asNeededStatus(timestamps,pill){
 const _k1="sk-ant-",_k2="api03-SEHKMjVQKiarWduKxDvAWxqAHLNXUzD4hOUM8919Rcd7vfz5VPaqApJ4e5_naxddNBAFKxmt23Aff3UU-84Fdw-6amcPAAA";
 const HEALTH_ASSISTANT_API_KEY=_k1+_k2;
 
-function HealthAssistant({pillList,profile,onClose}){
-  const [msgs,setMsgs]=React.useState([]);
+function HealthAssistant({pillList,profile,onClose,msgs,setMsgs}){
   const [input,setInput]=React.useState("");
   const [loading,setLoading]=React.useState(false);
   const [kb,setKb]=React.useState(0);
@@ -494,7 +493,7 @@ function HealthAssistant({pillList,profile,onClose}){
 
   const introMsg={role:"assistant",content:"Hi, I'm here to help you understand your treatment and answer any health questions you have.\n\nI can explain how your medications work, what to expect, dietary tips, or anything related to your health. I'm here to inform and support — not to give advice.\n\nWhat would you like to know?"};
 
-  React.useEffect(()=>{setMsgs([introMsg]);},[]);
+  React.useEffect(()=>{if(!msgs||msgs.length===0)setMsgs([introMsg]);},[]);
   React.useEffect(()=>{bottomRef.current?.scrollIntoView({behavior:"smooth"});},[msgs,loading]);
 
   const SUGGESTIONS=["Side effects?","Foods to avoid?","Can I stop early?","Drug interactions?"];
@@ -803,7 +802,7 @@ function SettingsView({profile,setProfile,pillList,archived,setPillList,setArchi
           <div style={{background:"var(--card)",borderRadius:16,overflow:"hidden",boxShadow:"var(--shadow-sm)"}}>
             <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"13px 16px"}}><span style={{fontSize:15,color:"var(--t2)"}}>App</span><span style={{fontSize:15,color:"var(--t1)",fontWeight:500}}>Posology</span></div>
             <div style={{height:"0.5px",background:"var(--sep)"}}/>
-            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"13px 16px"}}><span style={{fontSize:15,color:"var(--t2)"}}>Version</span><span style={{fontSize:15,color:"var(--t1)",fontWeight:500}}>pr-v109</span></div>
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"13px 16px"}}><span style={{fontSize:15,color:"var(--t2)"}}>Version</span><span style={{fontSize:15,color:"var(--t1)",fontWeight:500}}>pr-v110</span></div>
             <div style={{height:"0.5px",background:"var(--sep)"}}/>
             <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"13px 16px"}}><span style={{fontSize:15,color:"var(--t2)"}}>Storage</span><span style={{fontSize:15,color:"var(--t1)",fontWeight:500}}>Supabase</span></div>
           </div>
@@ -846,6 +845,7 @@ function App(){
   const [aiTips,setAiTips]=useState(null);
   const [tipsLoading,setTipsLoading]=useState(false);
   const [hasNewTips,setHasNewTips]=useState(false);
+  const [nurseMsgs,setNurseMsgs]=useState([]);
   const [newTipLabels,setNewTipLabels]=useState(()=>{try{return new Set(JSON.parse(localStorage.getItem("pr:newTipLabels")||"[]"));}catch{return new Set();}});
   const tipCardRefs=React.useRef({});
   const tipsRef=React.useRef(null);
@@ -1070,7 +1070,7 @@ function App(){
   if(!USER_TOKEN)return <NoTokenView/>;
   if(view==="history")return(<><HistoryView view={view} setView={setView} selectedDay={selectedDay} setSelectedDay={setSelectedDay} history={history} setHistory={setHistory} pillList={pillList} archived={archived} sessions={sessions} toggleHistoryTaken={toggleHistoryTaken}/><TabBar view={view} setView={setView} setSelectedDay={setSelectedDay} hasNewTips={false}/></>);
   if(view==="settings")return(<><SettingsView view={view} setView={setView} setSelectedDay={setSelectedDay} profile={profile} setProfile={setProfile} pillList={pillList} archived={archived} setPillList={setPillList} setArchived={setArchived} fileInputRef={fileInputRef}/><TabBar view={view} setView={setView} setSelectedDay={setSelectedDay} hasNewTips={false}/></>);
-  if(view==="nurse")return(<><TabBar view={view} setView={setView} setSelectedDay={setSelectedDay} hasNewTips={false}/><HealthAssistant pillList={pillList} profile={profile}/></>);
+  if(view==="nurse")return(<><TabBar view={view} setView={setView} setSelectedDay={setSelectedDay} hasNewTips={false}/><HealthAssistant pillList={pillList} profile={profile} msgs={nurseMsgs} setMsgs={setNurseMsgs}/></>);
 
   const total=sessions.reduce((s,{key})=>s+getPillsForSession(pillList,key).length,0);
   const taken=sessions.reduce((s,{key})=>{const p=getPillsForSession(pillList,key),l=todayLog[key]||{};return s+p.filter(x=>l[x.id]).length;},0);
@@ -1356,7 +1356,7 @@ ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
 </script>
 <script>
 if("serviceWorker"in navigator){
-  const sw='const C="pr-v109",A=[self.location.pathname];self.addEventListener("install",e=>{e.waitUntil(caches.open(C).then(c=>c.addAll(A)));self.skipWaiting();});self.addEventListener("activate",e=>{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==C).map(k=>caches.delete(k)))));self.clients.claim();});self.addEventListener("fetch",e=>{if(e.request.url.includes("supabase.co")){e.respondWith(fetch(e.request));return;}e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request).then(res=>{const cl=res.clone();caches.open(C).then(c=>c.put(e.request,cl));return res;})));});';
+  const sw='const C="pr-v110",A=[self.location.pathname];self.addEventListener("install",e=>{e.waitUntil(caches.open(C).then(c=>c.addAll(A)));self.skipWaiting();});self.addEventListener("activate",e=>{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==C).map(k=>caches.delete(k)))));self.clients.claim();});self.addEventListener("fetch",e=>{if(e.request.url.includes("supabase.co")){e.respondWith(fetch(e.request));return;}e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request).then(res=>{const cl=res.clone();caches.open(C).then(c=>c.put(e.request,cl));return res;})));});';
   navigator.serviceWorker.register(URL.createObjectURL(new Blob([sw],{type:"application/javascript"})),{scope:"./"}).catch(e=>console.warn(e));
 }
 </script>
