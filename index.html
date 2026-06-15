@@ -495,7 +495,7 @@ function HealthAssistant({pillList,profile,onClose,msgs,setMsgs}){
   const systemPrompt=`You are a warm, knowledgeable health companion for someone managing their daily treatment — like a trusted, experienced nurse who respects the person's time.\n\nTheir current medications: ${pillSummary}\nTheir profile: ${profileSummary}\n\nHow to answer:\n- Be brief: usually 2 to 4 sentences. Lead with the direct answer, with no preamble and no restating the question.\n- Be specific to THEIR treatment. Name their actual medications and tie what you say to their situation. Avoid generic health filler that could apply to anyone.\n- Use plain, warm language. Use **bold** sparingly to highlight one key term or action.\n- Only suggest consulting their doctor when it genuinely matters, not as a reflex on every reply.\n\nBoundaries:\n- Inform and explain, but never diagnose or give a personal medical recommendation.\n- Never tell them to start, stop, or change a treatment.\n- If something is outside your scope or you are unsure, say so briefly and kindly.\n\nAlways answer in the language the user writes in.`;
 
   React.useEffect(()=>{if(!didScroll.current){didScroll.current=true;return;}bottomRef.current?.scrollIntoView({behavior:"smooth"});},[msgs,loading,err]);
-  React.useEffect(()=>{const el=bottomRef.current;if(!el){setShowDown(false);return;}const io=new IntersectionObserver(function(entries){setShowDown(msgs.length>0&&!entries[0].isIntersecting);},{rootMargin:"0px 0px -170px 0px",threshold:0});io.observe(el);return ()=>io.disconnect();},[msgs.length,loading,err]);
+  React.useEffect(()=>{const el=bottomRef.current;if(!el){setShowDown(false);return;}const io=new IntersectionObserver(function(entries){setShowDown(msgs.length>0&&!entries[0].isIntersecting);},{rootMargin:"0px 0px -150px 0px",threshold:0});io.observe(el);return ()=>io.disconnect();},[msgs.length,loading,err]);
 
   const SUGGESTIONS=["Side effects?","Foods to avoid?","Drug interactions?"];
 
@@ -572,7 +572,7 @@ function HealthAssistant({pillList,profile,onClose,msgs,setMsgs}){
         </div>
       )}
 
-      {showDown&&(<button onClick={()=>bottomRef.current?.scrollIntoView({behavior:"smooth"})} aria-label="Scroll to latest" style={{position:"fixed",left:"50%",transform:"translateX(-50%)",bottom:kb>0?"calc("+kb+"px + 104px)":"calc(59px + env(safe-area-inset-bottom,16px) + 104px)",zIndex:590,width:40,height:40,borderRadius:"50%",background:"var(--card)",border:"1px solid var(--sep-strong)",boxShadow:"0 4px 16px rgba(0,0,0,0.18)",display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer"}}><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--t2)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></svg></button>)}
+      {showDown&&(<button onClick={()=>bottomRef.current?.scrollIntoView({behavior:"smooth"})} aria-label="Scroll to latest" style={{position:"fixed",left:0,right:0,margin:"0 auto",bottom:kb>0?"calc("+kb+"px + 104px)":"calc(59px + env(safe-area-inset-bottom,16px) + 104px)",zIndex:590,width:40,height:40,borderRadius:"50%",background:"var(--card)",border:"1px solid var(--sep-strong)",boxShadow:"0 4px 16px rgba(0,0,0,0.18)",display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer"}}><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--t2)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></svg></button>)}
       <div style={{position:"fixed",bottom:kb>0?kb+"px":"calc(59px + env(safe-area-inset-bottom,16px))",left:0,right:0,background:"var(--card)",borderTop:"0.5px solid var(--sep)",zIndex:600,transition:"bottom 0.1s ease-out"}}>
         <div style={{textAlign:"center",fontSize:11.5,color:"var(--t2)",lineHeight:1.45,padding:"8px 24px 2px"}}>This assistant uses AI and isn't medical advice.</div>
         <div style={{padding:"6px 16px 10px",display:"flex",gap:8,alignItems:"flex-end"}}>
@@ -785,7 +785,7 @@ function SettingsView({profile,setProfile,pillList,archived,setPillList,setArchi
           <div style={{background:"var(--card)",borderRadius:16,overflow:"hidden",boxShadow:"var(--shadow-sm)"}}>
             <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"13px 16px"}}><span style={{fontSize:15,color:"var(--t2)"}}>App</span><span style={{fontSize:15,color:"var(--t1)",fontWeight:500}}>Posology</span></div>
             <div style={{height:"0.5px",background:"var(--sep)"}}/>
-            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"13px 16px"}}><span style={{fontSize:15,color:"var(--t2)"}}>Version</span><span style={{fontSize:15,color:"var(--t1)",fontWeight:500}}>pr-v124</span></div>
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"13px 16px"}}><span style={{fontSize:15,color:"var(--t2)"}}>Version</span><span style={{fontSize:15,color:"var(--t1)",fontWeight:500}}>pr-v125</span></div>
             <div style={{height:"0.5px",background:"var(--sep)"}}/>
             <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"13px 16px"}}><span style={{fontSize:15,color:"var(--t2)"}}>Storage</span><span style={{fontSize:15,color:"var(--t1)",fontWeight:500}}>Supabase</span></div>
           </div>
@@ -1340,7 +1340,7 @@ ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
 </script>
 <script>
 if("serviceWorker"in navigator){
-  const sw='const C="pr-v124",A=[self.location.pathname];self.addEventListener("install",e=>{e.waitUntil(caches.open(C).then(c=>c.addAll(A)));self.skipWaiting();});self.addEventListener("activate",e=>{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==C).map(k=>caches.delete(k)))));self.clients.claim();});self.addEventListener("fetch",e=>{if(e.request.url.includes("supabase.co")){e.respondWith(fetch(e.request));return;}e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request).then(res=>{const cl=res.clone();caches.open(C).then(c=>c.put(e.request,cl));return res;})));});';
+  const sw='const C="pr-v125",A=[self.location.pathname];self.addEventListener("install",e=>{e.waitUntil(caches.open(C).then(c=>c.addAll(A)));self.skipWaiting();});self.addEventListener("activate",e=>{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==C).map(k=>caches.delete(k)))));self.clients.claim();});self.addEventListener("fetch",e=>{if(e.request.url.includes("supabase.co")){e.respondWith(fetch(e.request));return;}e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request).then(res=>{const cl=res.clone();caches.open(C).then(c=>c.put(e.request,cl));return res;})));});';
   navigator.serviceWorker.register(URL.createObjectURL(new Blob([sw],{type:"application/javascript"})),{scope:"./"}).catch(e=>console.warn(e));
 }
 </script>
