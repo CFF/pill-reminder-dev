@@ -56,6 +56,20 @@ To verify in the Supabase dashboard (cannot be tested from Claude's environment)
 
 ---
 
+## Edge functions
+
+Two Supabase Edge Functions proxy the Anthropic API, which keeps the key server-side and bypasses CORS:
+- `nurse-chat`: powers the Assistant chat
+- `get-tips`: generates the AI dietary tips, cached by pill-list hash
+
+Both call model `claude-sonnet-4-6`, hardcoded in each function. When a model is retired, the string must be updated on Supabase. Sonnet 4.0 (`claude-sonnet-4-20250514`) retired 2026-06-15 and broke both functions until updated. The source is backed up in this repo under `supabase/functions/`, but the backup does not auto-deploy. Live edits happen on the Supabase dashboard.
+
+**Recommended hardening (not yet done):**
+- Guard for a missing `ANTHROPIC_API_KEY` before the API call, so an absent or mistyped key gives a clear error instead of a generic "invalid key" failure.
+- Wrap request parsing and the upstream fetch in error handling, so a malformed request or dropped connection returns a clean error instead of a raw 500.
+
+---
+
 ## Pill model
 
 ```
