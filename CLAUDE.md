@@ -110,6 +110,17 @@ If a dose was taken at 23:54 yesterday and the minimum interval is 6h, the app m
 
 ---
 
+## Debugging discipline
+
+When a fix "still doesn't work," resist patching again. Diagnose first.
+
+- **Reason from what's on screen, not from confidence.** Find something that *works*, compare it to what's broken, and the difference localizes the cause. The scroll-button bug was solved by noticing the tab bar stayed fixed while the input did not. The only difference was being inside the animated container.
+- **Find the one root cause before touching symptoms.** Fixing a threshold, then a transform, then an animation one at a time treats branches, not the root. Each patch can look right and still miss it.
+- **Verify the new code is actually running before concluding a fix failed.** A stale service-worker cache served old versions for several rounds and made correct fixes look broken. Now mitigated: the SW is network-first for navigations.
+- **Hold confidence loosely.** Present a cause as a hypothesis and let the user confirm on-device before declaring it fixed. Claude cannot see the screen; the user can.
+
+---
+
 ## Known gotchas
 
 - **Babel hooks rules:** no hooks after conditional returns, no components defined inside `App`
@@ -117,6 +128,7 @@ If a dose was taken at 23:54 yesterday and the minimum interval is 6h, the app m
 - **GitHub Secret Scanning** blocks `sk-ant-api03-*` even in comments. Anthropic key lives in Supabase secrets only
 - **SW cache is isolated from Safari.** Version bump is mandatory on every meaningful commit
 - **Version string appears in exactly 2 places.** Verify count == 2 after every replace
+- **CSS transforms break `position:fixed` for descendants**, including a transform left behind by an animation's fill mode. Elements that must stay put (Assistant input, scroll button) are portaled to `body` to escape the `fade-up` container
 
 ---
 
