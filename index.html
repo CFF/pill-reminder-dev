@@ -787,7 +787,7 @@ function SettingsView({profile,setProfile,pillList,archived,setPillList,setArchi
           <div style={{background:"var(--card)",borderRadius:16,overflow:"hidden",boxShadow:"var(--shadow-sm)"}}>
             <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"13px 16px"}}><span style={{fontSize:15,color:"var(--t2)"}}>App</span><span style={{fontSize:15,color:"var(--t1)",fontWeight:500}}>Posology</span></div>
             <div style={{height:"0.5px",background:"var(--sep)"}}/>
-            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"13px 16px"}}><span style={{fontSize:15,color:"var(--t2)"}}>Version</span><span style={{fontSize:15,color:"var(--t1)",fontWeight:500}}>pr-v129</span></div>
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"13px 16px"}}><span style={{fontSize:15,color:"var(--t2)"}}>Version</span><span style={{fontSize:15,color:"var(--t1)",fontWeight:500}}>pr-v130</span></div>
             <div style={{height:"0.5px",background:"var(--sep)"}}/>
             <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"13px 16px"}}><span style={{fontSize:15,color:"var(--t2)"}}>Storage</span><span style={{fontSize:15,color:"var(--t1)",fontWeight:500}}>Supabase</span></div>
           </div>
@@ -834,6 +834,12 @@ function App(){
   const [newTipLabels,setNewTipLabels]=useState(()=>{try{return new Set(JSON.parse(localStorage.getItem("pr:newTipLabels")||"[]"));}catch{return new Set();}});
   const tipCardRefs=React.useRef({});
   const tipsRef=React.useRef(null);
+  const swipeStartX=React.useRef(null);
+  const swipeStartY=React.useRef(null);
+  const swipeLocked=React.useRef(null);
+  const swipeDeltaX=React.useRef(0);
+  const swipeContainer=React.useRef(null);
+  const VIEWS=["today","history","nurse","settings"];
   async function forceRefreshTips(){
     setAiTips(null);
     setTipsLoading(true);
@@ -1054,15 +1060,52 @@ function App(){
   </div>);
   if(loading)return(<div style={{minHeight:"100vh",background:"var(--bg)",display:"flex",alignItems:"center",justifyContent:"center"}}><div style={{color:"var(--t2)",fontSize:14}}>Loading…</div></div>);
   if(!USER_TOKEN)return <NoTokenView/>;
-  if(view==="history")return(<><HistoryView view={view} setView={setView} selectedDay={selectedDay} setSelectedDay={setSelectedDay} history={history} setHistory={setHistory} pillList={pillList} archived={archived} sessions={sessions} toggleHistoryTaken={toggleHistoryTaken}/><TabBar view={view} setView={setView} setSelectedDay={setSelectedDay} hasNewTips={false}/></>);
-  if(view==="settings")return(<><SettingsView view={view} setView={setView} setSelectedDay={setSelectedDay} profile={profile} setProfile={setProfile} pillList={pillList} archived={archived} setPillList={setPillList} setArchived={setArchived} fileInputRef={fileInputRef}/><TabBar view={view} setView={setView} setSelectedDay={setSelectedDay} hasNewTips={false}/></>);
-  if(view==="nurse")return(<><TabBar view={view} setView={setView} setSelectedDay={setSelectedDay} hasNewTips={false}/><HealthAssistant pillList={pillList} profile={profile} msgs={nurseMsgs} setMsgs={setNurseMsgs}/></>);
+  const vIdx=VIEWS.indexOf(view);
+  function handleSwipeStart(e){
+    const t=e.touches[0];
+    if(t.clientX<30)return;
+    swipeStartX.current=t.clientX;
+    swipeStartY.current=t.clientY;
+    swipeLocked.current=null;
+    swipeDeltaX.current=0;
+    if(swipeContainer.current)swipeContainer.current.style.transition="none";
+  }
+  function handleSwipeMove(e){
+    if(swipeStartX.current===null)return;
+    const dx=e.touches[0].clientX-swipeStartX.current;
+    const dy=e.touches[0].clientY-swipeStartY.current;
+    if(swipeLocked.current===null){
+      if(Math.abs(dx)>Math.abs(dy)&&Math.abs(dx)>6){swipeLocked.current="x";}
+      else if(Math.abs(dy)>6){swipeLocked.current="v";swipeStartX.current=null;return;}
+      else return;
+    }
+    if(swipeLocked.current!=="x")return;
+    e.preventDefault();
+    swipeDeltaX.current=dx;
+    if(swipeContainer.current)swipeContainer.current.style.transform="translateX(calc(-"+vIdx*(100/4)+"% + "+dx+"px))";
+  }
+  function handleSwipeEnd(){
+    if(swipeLocked.current!=="x"||swipeStartX.current===null){swipeStartX.current=null;return;}
+    const dx=swipeDeltaX.current;
+    let newIdx=vIdx;
+    if(dx<-60&&vIdx<VIEWS.length-1)newIdx=vIdx+1;
+    else if(dx>60&&vIdx>0)newIdx=vIdx-1;
+    if(swipeContainer.current)swipeContainer.current.style.transition="transform 0.3s ease";
+    setView(VIEWS[newIdx]);
+    if(newIdx!==vIdx&&VIEWS[newIdx]==="history")setSelectedDay(null);
+    swipeStartX.current=null;
+    swipeDeltaX.current=0;
+  }
 
   const total=sessions.reduce((s,{key})=>s+getPillsForSession(pillList,key).length,0);
   const taken=sessions.reduce((s,{key})=>{const p=getPillsForSession(pillList,key),l=todayLog[key]||{};return s+p.filter(x=>l[x.id]).length;},0);
   const pct=total?taken/total:0,R=33,C=2*Math.PI*R,ringCol=pct===1?"var(--green)":"var(--acc)";
 
-  return(<>
+  return(
+    <div style={{position:"fixed",inset:0,overflow:"hidden",background:"var(--bg)"}}>
+      <div ref={swipeContainer} onTouchStart={handleSwipeStart} onTouchMove={handleSwipeMove} onTouchEnd={handleSwipeEnd}
+        style={{display:"flex",width:"400%",height:"100%",transform:"translateX(-"+vIdx*(100/4)+"%)",willChange:"transform",touchAction:"pan-y"}}>
+        <div style={{width:"25%",height:"100%",overflowY:"auto",WebkitOverflowScrolling:"touch",overflowX:"hidden"}}>
     <div style={{minHeight:"100vh",background:"var(--bg)",paddingBottom:"calc(90px + env(safe-area-inset-bottom,0px))"}} className="fade-up today-scroll">
       <div style={{maxWidth:480,margin:"0 auto"}}>
         <div style={{background:"var(--card)",borderRadius:"0 0 24px 24px",boxShadow:"var(--shadow-md)",marginBottom:6,paddingTop:"calc(env(safe-area-inset-top,20px) + 20px)",paddingBottom:18,paddingLeft:20,paddingRight:20,backgroundImage:"radial-gradient(ellipse at 110% -10%, var(--acc-glow) 0%, transparent 60%)"}}>
@@ -1335,14 +1378,27 @@ function App(){
         />
       </div>
     </BottomSheet>)}
-  </>);
+        </div>
+        <div style={{width:"25%",height:"100%",overflowY:"auto",WebkitOverflowScrolling:"touch",overflowX:"hidden"}}>
+          <HistoryView view={view} setView={setView} selectedDay={selectedDay} setSelectedDay={setSelectedDay} history={history} setHistory={setHistory} pillList={pillList} archived={archived} sessions={sessions} toggleHistoryTaken={toggleHistoryTaken}/>
+        </div>
+        <div style={{width:"25%",height:"100%",overflowY:"auto",WebkitOverflowScrolling:"touch",overflowX:"hidden",display:"flex",flexDirection:"column"}}>
+          <HealthAssistant pillList={pillList} profile={profile} msgs={nurseMsgs} setMsgs={setNurseMsgs}/>
+        </div>
+        <div style={{width:"25%",height:"100%",overflowY:"auto",WebkitOverflowScrolling:"touch",overflowX:"hidden"}}>
+          <SettingsView view={view} setView={setView} setSelectedDay={setSelectedDay} profile={profile} setProfile={setProfile} pillList={pillList} archived={archived} setPillList={setPillList} setArchived={setArchived} fileInputRef={fileInputRef}/>
+        </div>
+      </div>
+      <TabBar view={view} setView={setView} setSelectedDay={setSelectedDay} hasNewTips={hasNewTips}/>
+    </div>
+  );
 }
 
 ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
 </script>
 <script>
 if("serviceWorker"in navigator){
-  const sw='const C="pr-v129",A=[self.location.pathname];self.addEventListener("install",e=>{e.waitUntil(caches.open(C).then(c=>c.addAll(A)));self.skipWaiting();});self.addEventListener("activate",e=>{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==C).map(k=>caches.delete(k)))));self.clients.claim();});self.addEventListener("fetch",e=>{if(e.request.url.includes("supabase.co")){e.respondWith(fetch(e.request));return;}if(e.request.mode==="navigate"){e.respondWith(fetch(e.request).then(res=>{const cl=res.clone();caches.open(C).then(c=>c.put(e.request,cl));return res;}).catch(()=>caches.match(e.request).then(r=>r||caches.match(self.location.pathname))));return;}e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request).then(res=>{const cl=res.clone();caches.open(C).then(c=>c.put(e.request,cl));return res;})));});';
+  const sw='const C="pr-v130",A=[self.location.pathname];self.addEventListener("install",e=>{e.waitUntil(caches.open(C).then(c=>c.addAll(A)));self.skipWaiting();});self.addEventListener("activate",e=>{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==C).map(k=>caches.delete(k)))));self.clients.claim();});self.addEventListener("fetch",e=>{if(e.request.url.includes("supabase.co")){e.respondWith(fetch(e.request));return;}if(e.request.mode==="navigate"){e.respondWith(fetch(e.request).then(res=>{const cl=res.clone();caches.open(C).then(c=>c.put(e.request,cl));return res;}).catch(()=>caches.match(e.request).then(r=>r||caches.match(self.location.pathname))));return;}e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request).then(res=>{const cl=res.clone();caches.open(C).then(c=>c.put(e.request,cl));return res;})));});';
   navigator.serviceWorker.register(URL.createObjectURL(new Blob([sw],{type:"application/javascript"})),{scope:"./"}).catch(e=>console.warn(e));
 }
 </script>
