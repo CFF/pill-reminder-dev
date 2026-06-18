@@ -1174,6 +1174,7 @@ function App(){
   </div>);
   if(loading)return(<div style={{minHeight:"100vh",background:"var(--bg)",display:"flex",alignItems:"center",justifyContent:"center"}}><div style={{color:"var(--t2)",fontSize:14}}>Loading…</div></div>);
   if(!USER_TOKEN)return <NoTokenView/>;
+  if(!pillList)return(<div style={{minHeight:"100vh",background:"var(--bg)",display:"flex",alignItems:"center",justifyContent:"center"}}><div style={{color:"var(--t2)",fontSize:14}}>Loading…</div></div>);
   if(view==="history")return(<><HistoryView view={view} setView={setView} selectedDay={selectedDay} setSelectedDay={setSelectedDay} history={history} setHistory={setHistory} pillList={pillList} archived={archived} sessions={sessions} toggleHistoryTaken={toggleHistoryTaken}/><TabBar view={view} setView={setView} setSelectedDay={setSelectedDay} hasNewTips={false}/></>);
   if(view==="settings")return(<><SettingsView view={view} setView={setView} setSelectedDay={setSelectedDay} profile={profile} setProfile={setProfile} pillList={pillList} archived={archived} setPillList={setPillList} setArchived={setArchived} fileInputRef={fileInputRef}/><TabBar view={view} setView={setView} setSelectedDay={setSelectedDay} hasNewTips={false}/></>);
   if(view==="nurse")return(<><TabBar view={view} setView={setView} setSelectedDay={setSelectedDay} hasNewTips={false}/><HealthAssistant pillList={pillList} profile={profile} msgs={nurseMsgs} setMsgs={setNurseMsgs}/></>);
