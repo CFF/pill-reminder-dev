@@ -703,7 +703,6 @@ function HistoryView({view,setView,selectedDay,setSelectedDay,history,setHistory
 
   return(<div style={{minHeight:"100vh",background:"var(--bg)",paddingBottom:"calc(90px + env(safe-area-inset-bottom,0px))"}} className="fade-up scroll-view">
     <div style={{maxWidth:480,margin:"0 auto"}}>
-        {!isOnline&&<div style={{background:"#f59e0b",color:"#fff",fontSize:12,fontWeight:600,textAlign:"center",padding:"6px 16px",borderRadius:"0 0 12px 12px",letterSpacing:"0.04em",marginBottom:4}}>Hors ligne — modifications sauvegardées localement</div>}
       <div style={{background:"var(--card)",borderRadius:"0 0 24px 24px",boxShadow:"var(--shadow-md)",marginBottom:6,paddingTop:"calc(env(safe-area-inset-top,20px) + 20px)",paddingBottom:18,paddingLeft:20,paddingRight:20,backgroundImage:"radial-gradient(ellipse at 110% -10%, var(--acc-glow) 0%, transparent 60%)"}}>
         {selectedDay?(()=>{const{weekday,date}=formatDayHeader(selectedDay);return(<>
           <button onClick={()=>setSelectedDay(null)} style={{display:"flex",alignItems:"center",gap:6,padding:"0",marginBottom:14,background:"transparent",color:"var(--blue)",fontSize:16,fontWeight:500}}><IconBack/> History</button>
@@ -1186,6 +1185,7 @@ function App(){
   return(<>
     <div style={{minHeight:"100vh",background:"var(--bg)",paddingBottom:"calc(90px + env(safe-area-inset-bottom,0px))"}} className="fade-up today-scroll scroll-view">
       <div style={{maxWidth:480,margin:"0 auto"}}>
+        {!isOnline&&<div style={{background:"#f59e0b",color:"#fff",fontSize:12,fontWeight:600,textAlign:"center",padding:"6px 16px",borderRadius:"0 0 12px 12px",letterSpacing:"0.04em",marginBottom:4}}>Hors ligne — modifications sauvegardées localement</div>}
         <div style={{background:"var(--card)",borderRadius:"0 0 24px 24px",boxShadow:"var(--shadow-md)",marginBottom:6,paddingTop:"calc(env(safe-area-inset-top,20px) + 20px)",paddingBottom:18,paddingLeft:20,paddingRight:20,backgroundImage:"radial-gradient(ellipse at 110% -10%, var(--acc-glow) 0%, transparent 60%)"}}>
           <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:12}}>
             <div>
