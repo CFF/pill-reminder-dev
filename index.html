@@ -90,25 +90,93 @@ function resolveToken(){
 }
 const USER_TOKEN=resolveToken();
 
+// ── Offline sync queue ───────────────────────────────────────────
+const SYNC_QUEUE_KEY = 'pr:syncqueue';
+function lsGet(key){ try{ const v=localStorage.getItem(key); return v?JSON.parse(v):null; }catch(e){ return null; } }
+function lsSet(key,value){ try{ localStorage.setItem(key,JSON.stringify(value)); }catch(e){} }
+function cacheWrite(key,value){ lsSet('pr:cache:'+key,{v:value,ts:Date.now()}); }
+function cacheRead(key){ const d=lsGet('pr:cache:'+key); return d?d.v:null; }
+function queueWrite(key,value){
+  const q=lsGet(SYNC_QUEUE_KEY)||[];
+  const idx=q.findIndex(e=>e.key===key);
+  if(idx!==-1)q.splice(idx,1);
+  q.push({key,value,ts:Date.now()});
+  lsSet(SYNC_QUEUE_KEY,q);
+}
+async function flushSyncQueue(){
+  const q=lsGet(SYNC_QUEUE_KEY)||[];
+  if(!q.length)return;
+  const failed=[];
+  for(const entry of q){
+    try{
+      await sbSetRemote(entry.key,entry.value);
+    }catch(e){
+      failed.push(entry);
+    }
+  }
+  lsSet(SYNC_QUEUE_KEY,failed);
+}
+
 // ── Supabase KV helpers ──────────────────────────────────────────
 async function sbGet(key){
   if(!USER_TOKEN)return null;
-  const res=await fetch(`${SUPA_URL}/rest/v1/data?user_token=eq.${encodeURIComponent(USER_TOKEN)}&key=eq.${encodeURIComponent(key)}&select=value`,{headers:{"apikey":SUPA_KEY,"Authorization":"Bearer "+SUPA_KEY}});
-  if(!res.ok)return null;
-  const rows=await res.json();
-  return rows.length?rows[0].value:null;
+  if(!navigator.onLine){
+    return cacheRead(key);
+  }
+  try{
+    const res=await fetch(`${SUPA_URL}/rest/v1/data?user_token=eq.${encodeURIComponent(USER_TOKEN)}&key=eq.${encodeURIComponent(key)}&select=value`,{headers:{"apikey":SUPA_KEY,"Authorization":"Bearer "+SUPA_KEY}});
+    if(!res.ok)return cacheRead(key);
+    const rows=await res.json();
+    const value=rows.length?rows[0].value:null;
+    if(value!==null)cacheWrite(key,value);
+    return value;
+  }catch(e){
+    return cacheRead(key);
+  }
+}
+async function sbSetRemote(key,value){
+  await fetch(`${SUPA_URL}/rest/v1/data`,{method:"POST",headers:{"apikey":SUPA_KEY,"Authorization":"Bearer "+SUPA_KEY,"Content-Type":"application/json","Prefer":"resolution=merge-duplicates"},body:JSON.stringify({user_token:USER_TOKEN,key,value,updated_at:new Date().toISOString()})});
 }
 async function sbSet(key,value){
   if(!USER_TOKEN)return;
-  await fetch(`${SUPA_URL}/rest/v1/data`,{method:"POST",headers:{"apikey":SUPA_KEY,"Authorization":"Bearer "+SUPA_KEY,"Content-Type":"application/json","Prefer":"resolution=merge-duplicates"},body:JSON.stringify({user_token:USER_TOKEN,key,value,updated_at:new Date().toISOString()})});
+  cacheWrite(key,value);
+  if(!navigator.onLine){
+    queueWrite(key,value);
+    return;
+  }
+  try{
+    await sbSetRemote(key,value);
+    const q=lsGet(SYNC_QUEUE_KEY)||[];
+    const filtered=q.filter(e=>e.key!==key);
+    lsSet(SYNC_QUEUE_KEY,filtered);
+  }catch(e){
+    queueWrite(key,value);
+  }
 }
 async function sbGetAllDayKeys(prefix){
   if(!USER_TOKEN)return[];
-  const res=await fetch(`${SUPA_URL}/rest/v1/data?user_token=eq.${encodeURIComponent(USER_TOKEN)}&key=like.${encodeURIComponent(prefix+'*')}&select=key,value&order=key.desc`,{headers:{"apikey":SUPA_KEY,"Authorization":"Bearer "+SUPA_KEY}});
-  if(!res.ok)return[];
-  return await res.json();
+  if(!navigator.onLine){
+    const keys=[];
+    for(let i=0;i<localStorage.length;i++){
+      const k=localStorage.key(i);
+      if(k&&k.startsWith('pr:cache:'+prefix)){
+        const realKey=k.replace('pr:cache:','');
+        const val=cacheRead(realKey);
+        if(val!==null)keys.push({key:realKey,value:val});
+      }
+    }
+    return keys.sort((a,b)=>b.key.localeCompare(a.key));
+  }
+  try{
+    const res=await fetch(`${SUPA_URL}/rest/v1/data?user_token=eq.${encodeURIComponent(USER_TOKEN)}&key=like.${encodeURIComponent(prefix+'*')}&select=key,value&order=key.desc`,{headers:{"apikey":SUPA_KEY,"Authorization":"Bearer "+SUPA_KEY}});
+    if(!res.ok)return[];
+    const rows=await res.json();
+    rows.forEach(r=>cacheWrite(r.key,r.value));
+    return rows;
+  }catch(e){
+    return[];
+  }
 }
-
 const PILL_LIST_KEY="pr:list",ARCHIVED_KEY="pr:archived",PROFILE_KEY="pr:profile";
 const dayKey=d=>`pr:day:${d}`;
 const asNeededDayKey=d=>`pr:asneeded:${d}`;
@@ -635,6 +703,7 @@ function HistoryView({view,setView,selectedDay,setSelectedDay,history,setHistory
 
   return(<div style={{minHeight:"100vh",background:"var(--bg)",paddingBottom:"calc(90px + env(safe-area-inset-bottom,0px))"}} className="fade-up scroll-view">
     <div style={{maxWidth:480,margin:"0 auto"}}>
+        {!isOnline&&<div style={{background:"#f59e0b",color:"#fff",fontSize:12,fontWeight:600,textAlign:"center",padding:"6px 16px",borderRadius:"0 0 12px 12px",letterSpacing:"0.04em",marginBottom:4}}>Hors ligne — modifications sauvegardées localement</div>}
       <div style={{background:"var(--card)",borderRadius:"0 0 24px 24px",boxShadow:"var(--shadow-md)",marginBottom:6,paddingTop:"calc(env(safe-area-inset-top,20px) + 20px)",paddingBottom:18,paddingLeft:20,paddingRight:20,backgroundImage:"radial-gradient(ellipse at 110% -10%, var(--acc-glow) 0%, transparent 60%)"}}>
         {selectedDay?(()=>{const{weekday,date}=formatDayHeader(selectedDay);return(<>
           <button onClick={()=>setSelectedDay(null)} style={{display:"flex",alignItems:"center",gap:6,padding:"0",marginBottom:14,background:"transparent",color:"var(--blue)",fontSize:16,fontWeight:500}}><IconBack/> History</button>
@@ -787,7 +856,7 @@ function SettingsView({profile,setProfile,pillList,archived,setPillList,setArchi
           <div style={{background:"var(--card)",borderRadius:16,overflow:"hidden",boxShadow:"var(--shadow-sm)"}}>
             <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"13px 16px"}}><span style={{fontSize:15,color:"var(--t2)"}}>App</span><span style={{fontSize:15,color:"var(--t1)",fontWeight:500}}>Posology</span></div>
             <div style={{height:"0.5px",background:"var(--sep)"}}/>
-            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"13px 16px"}}><span style={{fontSize:15,color:"var(--t2)"}}>Version</span><span style={{fontSize:15,color:"var(--t1)",fontWeight:500}}>pr-v132</span></div>
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"13px 16px"}}><span style={{fontSize:15,color:"var(--t2)"}}>Version</span><span style={{fontSize:15,color:"var(--t1)",fontWeight:500}}>pr-v133</span></div>
             <div style={{height:"0.5px",background:"var(--sep)"}}/>
             <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"13px 16px"}}><span style={{fontSize:15,color:"var(--t2)"}}>Storage</span><span style={{fontSize:15,color:"var(--t1)",fontWeight:500}}>Supabase</span></div>
           </div>
@@ -831,6 +900,7 @@ function App(){
   const [tipsLoading,setTipsLoading]=useState(false);
   const [hasNewTips,setHasNewTips]=useState(false);
   const [nurseMsgs,setNurseMsgs]=useState([]);
+  const [isOnline,setIsOnline]=useState(navigator.onLine);
   const [newTipLabels,setNewTipLabels]=useState(()=>{try{return new Set(JSON.parse(localStorage.getItem("pr:newTipLabels")||"[]"));}catch{return new Set();}});
   const tipCardRefs=React.useRef({});
   const tipsRef=React.useRef(null);
@@ -942,6 +1012,11 @@ function App(){
   useEffect(()=>{
     if(!USER_TOKEN){setLoading(false);return;}
     loadData();
+    const goOnline=()=>{setIsOnline(true);flushSyncQueue();};
+    const goOffline=()=>setIsOnline(false);
+    window.addEventListener('online',goOnline);
+    window.addEventListener('offline',goOffline);
+    return()=>{window.removeEventListener('online',goOnline);window.removeEventListener('offline',goOffline);};
   },[]);
 
   function buildEmptyLog(list){
@@ -1390,7 +1465,7 @@ ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
 </script>
 <script>
 if("serviceWorker"in navigator){
-  const sw='const C="pr-v132",A=[self.location.pathname];self.addEventListener("install",e=>{e.waitUntil(caches.open(C).then(c=>c.addAll(A)));self.skipWaiting();});self.addEventListener("activate",e=>{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==C).map(k=>caches.delete(k)))));self.clients.claim();});self.addEventListener("fetch",e=>{if(e.request.url.includes("supabase.co")){e.respondWith(fetch(e.request));return;}if(e.request.mode==="navigate"){e.respondWith(fetch(e.request).then(res=>{const cl=res.clone();caches.open(C).then(c=>c.put(e.request,cl));return res;}).catch(()=>caches.match(e.request).then(r=>r||caches.match(self.location.pathname))));return;}e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request).then(res=>{const cl=res.clone();caches.open(C).then(c=>c.put(e.request,cl));return res;})));});';
+  const sw='const C="pr-v133",A=[self.location.pathname];self.addEventListener("install",e=>{e.waitUntil(caches.open(C).then(c=>c.addAll(A)));self.skipWaiting();});self.addEventListener("activate",e=>{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==C).map(k=>caches.delete(k)))));self.clients.claim();});self.addEventListener("fetch",e=>{if(e.request.url.includes("supabase.co")){e.respondWith(fetch(e.request));return;}if(e.request.mode==="navigate"){e.respondWith(fetch(e.request).then(res=>{const cl=res.clone();caches.open(C).then(c=>c.put(e.request,cl));return res;}).catch(()=>caches.match(e.request).then(r=>r||caches.match(self.location.pathname))));return;}e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request).then(res=>{const cl=res.clone();caches.open(C).then(c=>c.put(e.request,cl));return res;})));});';
   navigator.serviceWorker.register(URL.createObjectURL(new Blob([sw],{type:"application/javascript"})),{scope:"./"}).catch(e=>console.warn(e));
 }
 </script>
