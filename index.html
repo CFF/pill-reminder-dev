@@ -362,8 +362,8 @@ function PillForm({initial,accent,onSave,onCancel,submitLabel="Add",defaultSessi
   return(
     <div style={{padding:"16px 16px 8px",background:"var(--card2)"}}>
       <input ref={imageInputRef} type="file" accept="image/*" capture="environment" style={{display:"none"}} onChange={handleScanLabel}/>
-      <button onClick={()=>imageInputRef.current?.click()} disabled={scanLoading} style={{width:"100%",marginBottom:16,padding:"11px 14px",borderRadius:12,border:"1.5px dashed var(--acc)",background:scanLoading?"var(--acc-soft)":"transparent",color:scanLoading?"var(--t2)":"var(--acc)",fontSize:15,fontWeight:600,cursor:scanLoading?"default":"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>
-        {scanLoading?"⏳ Analyse en cours…":"📷 Scanner l'ordonnance"}
+      <button onClick={()=>imageInputRef.current?.click()} disabled={scanLoading} style={{width:"100%",marginBottom:16,padding:"11px 14px",borderRadius:12,border:"none",background:"var(--acc-soft)",color:"var(--acc)",fontSize:15,fontWeight:600,cursor:scanLoading?"default":"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:8,opacity:scanLoading?0.6:1}}>
+        {scanLoading?"Analyse en cours…":"Scanner l'ordonnance"}
       </button>
       <div style={{position:"relative",marginBottom:16}}>
         <input autoFocus={!noAutoFocus} placeholder="Medicine name" value={name}
@@ -881,7 +881,7 @@ function SettingsView({profile,setProfile,pillList,archived,setPillList,setArchi
           <div style={{background:"var(--card)",borderRadius:16,overflow:"hidden",boxShadow:"var(--shadow-sm)"}}>
             <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"13px 16px"}}><span style={{fontSize:15,color:"var(--t2)"}}>App</span><span style={{fontSize:15,color:"var(--t1)",fontWeight:500}}>Posology</span></div>
             <div style={{height:"0.5px",background:"var(--sep)"}}/>
-            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"13px 16px"}}><span style={{fontSize:15,color:"var(--t2)"}}>Version</span><span style={{fontSize:15,color:"var(--t1)",fontWeight:500}}>pr-v135</span></div>
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"13px 16px"}}><span style={{fontSize:15,color:"var(--t2)"}}>Version</span><span style={{fontSize:15,color:"var(--t1)",fontWeight:500}}>pr-v136</span></div>
             <div style={{height:"0.5px",background:"var(--sep)"}}/>
             <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"13px 16px"}}><span style={{fontSize:15,color:"var(--t2)"}}>Storage</span><span style={{fontSize:15,color:"var(--t1)",fontWeight:500}}>Supabase</span></div>
           </div>
@@ -1491,7 +1491,7 @@ ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
 </script>
 <script>
 if("serviceWorker"in navigator){
-  const sw='const C="pr-v135",A=[self.location.pathname];self.addEventListener("install",e=>{e.waitUntil(caches.open(C).then(c=>c.addAll(A)));self.skipWaiting();});self.addEventListener("activate",e=>{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==C).map(k=>caches.delete(k)))));self.clients.claim();});self.addEventListener("fetch",e=>{if(e.request.url.includes("supabase.co")){e.respondWith(fetch(e.request));return;}if(e.request.mode==="navigate"){e.respondWith(fetch(e.request).then(res=>{const cl=res.clone();caches.open(C).then(c=>c.put(e.request,cl));return res;}).catch(()=>caches.match(e.request).then(r=>r||caches.match(self.location.pathname))));return;}e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request).then(res=>{const cl=res.clone();caches.open(C).then(c=>c.put(e.request,cl));return res;})));});';
+  const sw='const C="pr-v136",A=[self.location.pathname];self.addEventListener("install",e=>{e.waitUntil(caches.open(C).then(c=>c.addAll(A)));self.skipWaiting();});self.addEventListener("activate",e=>{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==C).map(k=>caches.delete(k)))));self.clients.claim();});self.addEventListener("fetch",e=>{if(e.request.url.includes("supabase.co")){e.respondWith(fetch(e.request));return;}if(e.request.mode==="navigate"){e.respondWith(fetch(e.request).then(res=>{const cl=res.clone();caches.open(C).then(c=>c.put(e.request,cl));return res;}).catch(()=>caches.match(e.request).then(r=>r||caches.match(self.location.pathname))));return;}e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request).then(res=>{const cl=res.clone();caches.open(C).then(c=>c.put(e.request,cl));return res;})));});';
   navigator.serviceWorker.register(URL.createObjectURL(new Blob([sw],{type:"application/javascript"})),{scope:"./"}).catch(e=>console.warn(e));
 }
 </script>
