@@ -361,8 +361,8 @@ function PillForm({initial,accent,onSave,onCancel,submitLabel="Add",defaultSessi
           <div style={{fontSize:11,fontWeight:700,color:"var(--t2)",textTransform:"uppercase",letterSpacing:"0.06em",marginLeft:"auto"}}>Quantity</div>
         </div>
         <div style={{display:"flex",alignItems:"center",gap:8,background:"var(--card)",borderRadius:12,boxShadow:"0 1px 3px rgba(0,0,0,0.07)",padding:"10px 12px"}}>
-          {stepBtn(()=>setDosageAmt(a=>Math.max(5,a-5)),"−")}
-          <input type="number" value={dosageAmt} onChange={e=>setDosageAmt(Math.max(1,Number(e.target.value)||1))} style={{width:44,border:"none",background:"transparent",color:"var(--t1)",fontSize:15,fontWeight:600,textAlign:"center",WebkitAppearance:"none",MozAppearance:"textfield"}}/>
+          {stepBtn(()=>setDosageAmt(a=>Math.max(0.25,Number(a)-5)),"−")}
+          <input type="text" inputMode="decimal" value={dosageAmt} onChange={e=>{const v=e.target.value;if(v===""||/^[0-9]*\.?[0-9]*$/.test(v))setDosageAmt(v);}} onBlur={e=>{const n=parseFloat(e.target.value);setDosageAmt(isNaN(n)||n<0.25?0.25:n);}} style={{width:44,border:"none",background:"transparent",color:"var(--t1)",fontSize:15,fontWeight:600,textAlign:"center"}}/>
           {stepBtn(()=>setDosageAmt(a=>a+5),"+")}
           <div style={{position:"relative",flexShrink:0}}>
             <select value={dosageUnit} onChange={e=>setDosageUnit(e.target.value)} style={{height:28,borderRadius:8,border:"none",background:"var(--card)",color:"var(--t1)",fontSize:13,fontWeight:600,paddingLeft:8,paddingRight:24,WebkitAppearance:"none",appearance:"none",cursor:"pointer"}}>
@@ -372,7 +372,7 @@ function PillForm({initial,accent,onSave,onCancel,submitLabel="Add",defaultSessi
           </div>
           <div style={{width:"0.5px",background:"var(--sep)",alignSelf:"stretch",margin:"0 2px",flexShrink:0}}/>
           {stepBtn(()=>setQuantity(q=>Math.max(0.5,q-1)),"−")}
-          <input type="number" value={quantity} onChange={e=>setQuantity(Math.max(0.5,Number(e.target.value)||1))} style={{width:30,border:"none",background:"transparent",color:"var(--t1)",fontSize:15,fontWeight:600,textAlign:"center",WebkitAppearance:"none",MozAppearance:"textfield"}}/>
+          <input type="text" inputMode="decimal" value={quantity} onChange={e=>{const v=e.target.value;if(v===""||/^[0-9]*\.?[0-9]*$/.test(v))setQuantity(v);}} onBlur={e=>{const n=parseFloat(e.target.value);setQuantity(isNaN(n)||n<0.5?0.5:n);}} style={{width:30,border:"none",background:"transparent",color:"var(--t1)",fontSize:15,fontWeight:600,textAlign:"center"}}/>
           {stepBtn(()=>setQuantity(q=>q+1),"+")}
         </div>
       </div>
@@ -806,11 +806,11 @@ function SettingsView({profile,setProfile,pillList,archived,setPillList,setArchi
         <div style={{marginBottom:28}}>
           <div style={{fontSize:12,fontWeight:600,color:"var(--t3)",textTransform:"uppercase",letterSpacing:"0.07em",marginBottom:10}}>Profile</div>
           <div style={{background:"var(--card)",borderRadius:16,overflow:"hidden",boxShadow:"var(--shadow-sm)"}}>
-            {[{field:"name",label:"Name",placeholder:"Your name",type:"text",width:160},{field:"age",label:"Age",placeholder:"—",type:"number",width:120},{field:"weight",label:"Weight (kg)",placeholder:"—",type:"number",width:120},{field:"height",label:"Height (cm)",placeholder:"—",type:"number",width:120}].map(({field,label,placeholder,type,width},i)=>(
+            {[{field:"name",label:"Name",placeholder:"Your name",type:"text",inputMode:"text",width:160},{field:"age",label:"Age",placeholder:"—",type:"text",inputMode:"numeric",width:120},{field:"weight",label:"Weight (kg)",placeholder:"—",type:"text",inputMode:"decimal",width:120},{field:"height",label:"Height (cm)",placeholder:"—",type:"text",inputMode:"numeric",width:120}].map(({field,label,placeholder,type,inputMode,width},i)=>(
               <div key={field} style={{position:"relative"}}>{i>0&&<div style={{position:"absolute",top:0,left:16,right:0,height:"0.5px",background:"var(--sep)"}}/>}
                 <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"13px 16px"}}>
                   <span style={{fontSize:15,color:"var(--t2)",fontWeight:500}}>{label}</span>
-                  <input type={type} value={profile[field]||""} placeholder={placeholder} onChange={e=>{const v=e.target.value;const newP={...profile,[field]:v};setProfile(newP);sbSet(PROFILE_KEY,newP);}} style={{border:"none",background:"transparent",color:"var(--t1)",fontSize:15,fontWeight:500,textAlign:"right",width,WebkitAppearance:"none"}}/>
+                  <input type={type} inputMode={inputMode} value={profile[field]||""} placeholder={placeholder} onChange={e=>{const v=e.target.value;const newP={...profile,[field]:v};setProfile(newP);sbSet(PROFILE_KEY,newP);}} style={{border:"none",background:"transparent",color:"var(--t1)",fontSize:15,fontWeight:500,textAlign:"right",width,WebkitAppearance:"none"}}/>
                 </div>
               </div>
             ))}
@@ -855,7 +855,7 @@ function SettingsView({profile,setProfile,pillList,archived,setPillList,setArchi
           <div style={{background:"var(--card)",borderRadius:16,overflow:"hidden",boxShadow:"var(--shadow-sm)"}}>
             <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"13px 16px"}}><span style={{fontSize:15,color:"var(--t2)"}}>App</span><span style={{fontSize:15,color:"var(--t1)",fontWeight:500}}>Posology</span></div>
             <div style={{height:"0.5px",background:"var(--sep)"}}/>
-            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"13px 16px"}}><span style={{fontSize:15,color:"var(--t2)"}}>Version</span><span style={{fontSize:15,color:"var(--t1)",fontWeight:500}}>pr-v133</span></div>
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"13px 16px"}}><span style={{fontSize:15,color:"var(--t2)"}}>Version</span><span style={{fontSize:15,color:"var(--t1)",fontWeight:500}}>pr-v134</span></div>
             <div style={{height:"0.5px",background:"var(--sep)"}}/>
             <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"13px 16px"}}><span style={{fontSize:15,color:"var(--t2)"}}>Storage</span><span style={{fontSize:15,color:"var(--t1)",fontWeight:500}}>Supabase</span></div>
           </div>
@@ -1466,7 +1466,7 @@ ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
 </script>
 <script>
 if("serviceWorker"in navigator){
-  const sw='const C="pr-v133",A=[self.location.pathname];self.addEventListener("install",e=>{e.waitUntil(caches.open(C).then(c=>c.addAll(A)));self.skipWaiting();});self.addEventListener("activate",e=>{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==C).map(k=>caches.delete(k)))));self.clients.claim();});self.addEventListener("fetch",e=>{if(e.request.url.includes("supabase.co")){e.respondWith(fetch(e.request));return;}if(e.request.mode==="navigate"){e.respondWith(fetch(e.request).then(res=>{const cl=res.clone();caches.open(C).then(c=>c.put(e.request,cl));return res;}).catch(()=>caches.match(e.request).then(r=>r||caches.match(self.location.pathname))));return;}e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request).then(res=>{const cl=res.clone();caches.open(C).then(c=>c.put(e.request,cl));return res;})));});';
+  const sw='const C="pr-v134",A=[self.location.pathname];self.addEventListener("install",e=>{e.waitUntil(caches.open(C).then(c=>c.addAll(A)));self.skipWaiting();});self.addEventListener("activate",e=>{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==C).map(k=>caches.delete(k)))));self.clients.claim();});self.addEventListener("fetch",e=>{if(e.request.url.includes("supabase.co")){e.respondWith(fetch(e.request));return;}if(e.request.mode==="navigate"){e.respondWith(fetch(e.request).then(res=>{const cl=res.clone();caches.open(C).then(c=>c.put(e.request,cl));return res;}).catch(()=>caches.match(e.request).then(r=>r||caches.match(self.location.pathname))));return;}e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request).then(res=>{const cl=res.clone();caches.open(C).then(c=>c.put(e.request,cl));return res;})));});';
   navigator.serviceWorker.register(URL.createObjectURL(new Blob([sw],{type:"application/javascript"})),{scope:"./"}).catch(e=>console.warn(e));
 }
 </script>
