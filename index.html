@@ -327,9 +327,31 @@ function PillForm({initial,accent,onSave,onCancel,submitLabel="Add",defaultSessi
   const [quantity,setQuantity]=useState(initial?.quantity||parsed.qty||1);
   const [suggestions,setSuggestions]=useState([]);
   const [showSuggestions,setShowSuggestions]=useState(false);
+  const [scanLoading,setScanLoading]=useState(false);
   const searchTimer=useRef(null);
+  const imageInputRef=useRef(null);
   function handleNameChange(val){setName(val);setShowSuggestions(true);clearTimeout(searchTimer.current);if(val.length<2){setSuggestions([]);return;}searchTimer.current=setTimeout(async()=>{const res=await searchDrugs(val);setSuggestions(res);},300);}
   function pickSuggestion(s){setName(s.name);setSuggestions([]);setShowSuggestions(false);}
+  async function handleScanLabel(e){
+    const file=e.target.files?.[0];
+    if(!file)return;
+    setScanLoading(true);
+    try{
+      const b64=await new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result.split(",")[1]);r.onerror=rej;r.readAsDataURL(file);});
+      const fetchRes=await fetch("https://fotzkqkghxndjnomrspr.supabase.co/functions/v1/nurse-chat",{method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZvdHprcWtnaHhuZGpub21yc3ByIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA4MTg0MTMsImV4cCI6MjA5NjM5NDQxM30.o8AyVFlhd_g0NbdB1hd28x8ERxmCO4OjXPuwVoCJano"},body:JSON.stringify({system:"",messages:[{role:"user",content:[{type:"image",source:{type:"base64",media_type:file.type,data:b64}},{type:"text",text:"This is a pharmacy label or medication packaging. Extract info and respond ONLY with valid JSON, no markdown, no explanation. Fields: name (string), dosageAmt (number or null), dosageUnit (string or null), quantity (number, default 1), session (one of morning/lunch/evening or null), timing (one of with_meal/before_meal/after_meal or null), durationDays (number or null), ongoing (boolean)"}]}]})});
+      const data=await fetchRes.json();
+      const text=data.content?.find(b=>b.type==="text")?.text||"";
+      const parsed=JSON.parse(text.replace(/```json|```/g,"").trim());
+      if(parsed.name)setName(parsed.name);
+      if(parsed.dosageAmt)setDosageAmt(Number(parsed.dosageAmt));
+      if(parsed.dosageUnit)setDosageUnit(parsed.dosageUnit);
+      if(parsed.quantity)setQuantity(Number(parsed.quantity));
+      if(parsed.session)setSchedules([{session:parsed.session,timing:parsed.timing||""}]);
+      if(parsed.durationDays){setDurationDays(Number(parsed.durationDays));setOngoing(false);}
+      else if(parsed.ongoing)setOngoing(true);
+    }catch(err){console.error("Scan error",err);alert("Scan failed — please fill in manually.");}
+    finally{setScanLoading(false);if(imageInputRef.current)imageInputRef.current.value="";}
+  }
   function handleSave(){
     if(!name.trim())return;
     const dose=quantity+" x "+dosageAmt+dosageUnit;
@@ -339,6 +361,10 @@ function PillForm({initial,accent,onSave,onCancel,submitLabel="Add",defaultSessi
   const stepBtn=(onClick,label)=>(<button onClick={onClick} style={{width:28,height:28,borderRadius:8,background:"var(--acc-soft)",border:"none",color:"var(--acc)",fontSize:18,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",flexShrink:0}}>{label}</button>);
   return(
     <div style={{padding:"16px 16px 8px",background:"var(--card2)"}}>
+      <input ref={imageInputRef} type="file" accept="image/*" capture="environment" style={{display:"none"}} onChange={handleScanLabel}/>
+      <button onClick={()=>imageInputRef.current?.click()} disabled={scanLoading} style={{width:"100%",marginBottom:16,padding:"11px 14px",borderRadius:12,border:"1.5px dashed var(--acc)",background:scanLoading?"var(--acc-soft)":"transparent",color:scanLoading?"var(--t2)":"var(--acc)",fontSize:15,fontWeight:600,cursor:scanLoading?"default":"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>
+        {scanLoading?"⏳ Analyse en cours…":"📷 Scanner l'ordonnance"}
+      </button>
       <div style={{position:"relative",marginBottom:16}}>
         <input autoFocus={!noAutoFocus} placeholder="Medicine name" value={name}
           onChange={e=>handleNameChange(e.target.value)} onKeyDown={e=>e.key==="Enter"&&handleSave()}
@@ -855,7 +881,7 @@ function SettingsView({profile,setProfile,pillList,archived,setPillList,setArchi
           <div style={{background:"var(--card)",borderRadius:16,overflow:"hidden",boxShadow:"var(--shadow-sm)"}}>
             <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"13px 16px"}}><span style={{fontSize:15,color:"var(--t2)"}}>App</span><span style={{fontSize:15,color:"var(--t1)",fontWeight:500}}>Posology</span></div>
             <div style={{height:"0.5px",background:"var(--sep)"}}/>
-            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"13px 16px"}}><span style={{fontSize:15,color:"var(--t2)"}}>Version</span><span style={{fontSize:15,color:"var(--t1)",fontWeight:500}}>pr-v134</span></div>
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"13px 16px"}}><span style={{fontSize:15,color:"var(--t2)"}}>Version</span><span style={{fontSize:15,color:"var(--t1)",fontWeight:500}}>pr-v135</span></div>
             <div style={{height:"0.5px",background:"var(--sep)"}}/>
             <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"13px 16px"}}><span style={{fontSize:15,color:"var(--t2)"}}>Storage</span><span style={{fontSize:15,color:"var(--t1)",fontWeight:500}}>Supabase</span></div>
           </div>
@@ -1465,7 +1491,7 @@ ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
 </script>
 <script>
 if("serviceWorker"in navigator){
-  const sw='const C="pr-v134",A=[self.location.pathname];self.addEventListener("install",e=>{e.waitUntil(caches.open(C).then(c=>c.addAll(A)));self.skipWaiting();});self.addEventListener("activate",e=>{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==C).map(k=>caches.delete(k)))));self.clients.claim();});self.addEventListener("fetch",e=>{if(e.request.url.includes("supabase.co")){e.respondWith(fetch(e.request));return;}if(e.request.mode==="navigate"){e.respondWith(fetch(e.request).then(res=>{const cl=res.clone();caches.open(C).then(c=>c.put(e.request,cl));return res;}).catch(()=>caches.match(e.request).then(r=>r||caches.match(self.location.pathname))));return;}e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request).then(res=>{const cl=res.clone();caches.open(C).then(c=>c.put(e.request,cl));return res;})));});';
+  const sw='const C="pr-v135",A=[self.location.pathname];self.addEventListener("install",e=>{e.waitUntil(caches.open(C).then(c=>c.addAll(A)));self.skipWaiting();});self.addEventListener("activate",e=>{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==C).map(k=>caches.delete(k)))));self.clients.claim();});self.addEventListener("fetch",e=>{if(e.request.url.includes("supabase.co")){e.respondWith(fetch(e.request));return;}if(e.request.mode==="navigate"){e.respondWith(fetch(e.request).then(res=>{const cl=res.clone();caches.open(C).then(c=>c.put(e.request,cl));return res;}).catch(()=>caches.match(e.request).then(r=>r||caches.match(self.location.pathname))));return;}e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request).then(res=>{const cl=res.clone();caches.open(C).then(c=>c.put(e.request,cl));return res;})));});';
   navigator.serviceWorker.register(URL.createObjectURL(new Blob([sw],{type:"application/javascript"})),{scope:"./"}).catch(e=>console.warn(e));
 }
 </script>
