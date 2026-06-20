@@ -177,7 +177,12 @@ async function sbGetAllDayKeys(prefix){
     return[];
   }
 }
-const PILL_LIST_KEY="pr:list",ARCHIVED_KEY="pr:archived",PROFILE_KEY="pr:profile";
+const PILL_LIST_KEY="pr:list",ARCHIVED_KEY="pr:archived",PROFILE_KEY="pr:profile",EVENTS_KEY="pr:events";
+async function logEvent(existingEvents,setStoredEvents,evt){
+  const updated=[...existingEvents,evt];
+  setStoredEvents(updated);
+  await sbSet(EVENTS_KEY,updated);
+}
 const dayKey=d=>`pr:day:${d}`;
 const asNeededDayKey=d=>`pr:asneeded:${d}`;
 const startOfTodayTs=()=>{const d=new Date();d.setHours(0,0,0,0);return d.getTime();};
@@ -709,7 +714,7 @@ function TabBar({view,setView,setSelectedDay,hasNewTips}){
   </div>);
 }
 
-function HistoryView({view,setView,selectedDay,setSelectedDay,history,setHistory,pillList,archived,sessions,toggleHistoryTaken}){
+function HistoryView({view,setView,selectedDay,setSelectedDay,history,setHistory,pillList,archived,sessions,toggleHistoryTaken,storedEvents}){
   const [showingAll,setShowingAll]=useState(false);
   const [loadingMore,setLoadingMore]=useState(false);
 
@@ -722,10 +727,23 @@ function HistoryView({view,setView,selectedDay,setSelectedDay,history,setHistory
     setLoadingMore(false);
   }
 
-  const archiveEvents=[];
-  for(const session of["morning","lunch","evening"]){for(const pill of(archived[session]||[])){if(pill.endDate)archiveEvents.push({date:pill.endDate,pill,session});}}
-  const archiveByDate={};
-  for(const ev of archiveEvents){if(!archiveByDate[ev.date])archiveByDate[ev.date]=[];archiveByDate[ev.date].push(ev);}
+  // Build event map: storedEvents (from pr:events) + synthetic events from archived
+  const eventsByDate={};
+  const addEvt=(date,evt)=>{if(!eventsByDate[date])eventsByDate[date]=[];eventsByDate[date].push(evt);};
+  // Synthetic: expired pills (durationDays ran out) and stopped pills (manually deleted/versioned)
+  for(const session of["morning","lunch","evening"]){
+    for(const pill of(archived[session]||[])){
+      if(!pill.endDate)continue;
+      const type=pill.eventType||( pill.durationDays!=null?"expired":"stopped");
+      addEvt(pill.endDate,{type,pill,session});
+    }
+  }
+  // Stored events (added, changed, stopped from pr:events)
+  for(const ev of(storedEvents||[])){
+    addEvt(ev.date,ev);
+  }
+  // archiveByDate kept for allDates union
+  const archiveByDate=eventsByDate;
 
   return(<div style={{minHeight:"100vh",background:"var(--bg)",paddingBottom:"calc(90px + env(safe-area-inset-bottom,0px))"}} className="fade-up scroll-view">
     <div style={{maxWidth:480,margin:"0 auto"}}>
@@ -772,16 +790,16 @@ function HistoryView({view,setView,selectedDay,setSelectedDay,history,setHistory
         })():(
           <>
           <GroupCard label="Log">
-            {history.length===0&&Object.keys(archiveByDate).length===0
+            {history.length===0&&Object.keys(eventsByDate).length===0
               ?<div style={{padding:"20px 18px",color:"var(--t3)",fontSize:15,fontStyle:"italic",textAlign:"center"}}>No history yet</div>
               :(()=>{
-                const allDates=[...new Set([...history.map(h=>h.date),...Object.keys(archiveByDate)])].sort((a,b)=>b.localeCompare(a));
+                const allDates=[...new Set([...history.map(h=>h.date),...Object.keys(eventsByDate)])].sort((a,b)=>b.localeCompare(a));
                 let rowIndex=0;
                 return allDates.map(date=>{
                   const histEntry=history.find(h=>h.date===date);
-                  const archEntries=archiveByDate[date]||[];
+                  const dayEvents=eventsByDate[date]||[];
                   const elements=[];
-                  archEntries.forEach(ev=>{const isFirst=rowIndex===0;rowIndex++;elements.push(<GroupRow key={"arch-"+ev.pill.id} first={isFirst}><div style={{display:"flex",alignItems:"center",gap:10,padding:"11px 16px"}}><span style={{color:"var(--t3)",display:"flex",flexShrink:0}}><IconArchive/></span><span style={{fontSize:13,color:"var(--t3)",fontStyle:"italic"}}><span style={{fontStyle:"normal",fontWeight:500,color:"var(--t2)"}}>{ev.pill.name}</span>{" "}finished on {formatFull(ev.pill.endDate)}</span></div></GroupRow>);});
+                  // Day row first
                   if(histEntry){
                     const{pct,taken:tk,total:tt}=dayScore(histEntry.log,pillList,archived,date);
                     const isToday=date===todayStr(),col=pct===100?"var(--green)":pct>=50?"var(--acc)":"var(--red)",C=2*Math.PI*13;
@@ -805,6 +823,34 @@ function HistoryView({view,setView,selectedDay,setSelectedDay,history,setHistory
                         <div style={{color:"var(--t3)",marginLeft:2}}><IconChevron/></div>
                       </div>
                     </GroupRow>);
+                  }
+                  // Events after day row
+                  dayEvents.forEach((ev,i)=>{
+                    const key=ev.type+"-"+(ev.pillId||ev.pill?.id||i)+"-"+date;
+                    const isFirst=rowIndex===0;rowIndex++;
+                    const pillName=ev.pillName||ev.pill?.name||"";
+                    const dose=ev.dose||ev.pill?.dose||"";
+                    const sess=ev.session?ev.session.charAt(0).toUpperCase()+ev.session.slice(1):"";
+                    let label,labelColor;
+                    if(ev.type==="added"){label="added";labelColor="var(--green)";}
+                    else if(ev.type==="stopped"){label="stopped";labelColor="var(--red)";}
+                    else if(ev.type==="expired"){label="end of treatment";labelColor="var(--t2)";}
+                    else if(ev.type==="changed"){label=null;}
+                    else{label=ev.type;labelColor="var(--t2)";}
+                    elements.push(<GroupRow key={key} first={isFirst}>
+                      <div style={{display:"flex",alignItems:"center",padding:"8px 16px"}}>
+                        <span style={{fontSize:14,color:"var(--t2)",lineHeight:1.4}}>
+                          {ev.type==="changed"
+                            ?<><span style={{fontWeight:600,color:"var(--t1)"}}>{pillName}</span>{" · "}<span style={{color:"var(--t3)",textDecoration:"line-through"}}>{ev.oldDose}</span>{" "}<span style={{color:"var(--acc)"}}>{"→"}</span>{" "}<span style={{fontWeight:600,color:"var(--t1)"}}>{ev.newDose}</span>{sess?" · "+sess:""}</>
+                            :<><span style={{fontWeight:600,color:"var(--t1)"}}>{pillName}{dose?" "+dose:""}</span>{sess?" · "+sess:""}{" · "}<span style={{color:labelColor,fontWeight:500}}>{label}</span></>
+                          }
+                        </span>
+                      </div>
+                    </GroupRow>);
+                  });
+                  // Date-only event rows (no histEntry for that date)
+                  if(!histEntry&&dayEvents.length>0){
+                    // already rendered above, just ensure rowIndex is correct
                   }
                   return elements;
                 });
@@ -881,7 +927,7 @@ function SettingsView({profile,setProfile,pillList,archived,setPillList,setArchi
           <div style={{background:"var(--card)",borderRadius:16,overflow:"hidden",boxShadow:"var(--shadow-sm)"}}>
             <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"13px 16px"}}><span style={{fontSize:15,color:"var(--t2)"}}>App</span><span style={{fontSize:15,color:"var(--t1)",fontWeight:500}}>Posology</span></div>
             <div style={{height:"0.5px",background:"var(--sep)"}}/>
-            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"13px 16px"}}><span style={{fontSize:15,color:"var(--t2)"}}>Version</span><span style={{fontSize:15,color:"var(--t1)",fontWeight:500}}>pr-v139</span></div>
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"13px 16px"}}><span style={{fontSize:15,color:"var(--t2)"}}>Version</span><span style={{fontSize:15,color:"var(--t1)",fontWeight:500}}>pr-v140</span></div>
             <div style={{height:"0.5px",background:"var(--sep)"}}/>
             <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"13px 16px"}}><span style={{fontSize:15,color:"var(--t2)"}}>Storage</span><span style={{fontSize:15,color:"var(--t1)",fontWeight:500}}>Supabase</span></div>
           </div>
@@ -1012,6 +1058,7 @@ function App(){
       const arch=await sbGet(ARCHIVED_KEY)||{morning:[],lunch:[],evening:[]};
       if(arch.night&&!arch.evening){arch.evening=arch.night;delete arch.night;}if(!arch.lunch)arch.lunch=[];
       setArchived(arch);
+      const evts=await sbGet(EVENTS_KEY)||[];setStoredEvents(evts);
       const prof=await sbGet(PROFILE_KEY)||{name:"",age:"",weight:"",height:""};setProfile(prof);
       const today=todayStr();let log=await sbGet(dayKey(today));
       if(!log){log=buildEmptyLog(list);await sbSet(dayKey(today),log);}
@@ -1154,6 +1201,7 @@ function App(){
     for(const s of sessList){if(s!=="as_needed")newLog={...newLog,[s]:{...newLog[s],[id]:false}};}
     setPillList(newList);setTodayLog(newLog);
     await sbSet(PILL_LIST_KEY,newList);await sbSet(dayKey(todayStr()),newLog);
+    await logEvent(storedEvents,setStoredEvents,{type:"added",date:todayStr(),pillName:pill.name,dose:pill.dose||"",session:primarySess,pillId:id});
     setTipsLoading(true);
     setAddSheet(null);
     generateTips(newList);
@@ -1188,6 +1236,7 @@ function App(){
     let newLog={...todayLog};
     const sessionsToClean=pill?.schedules?pill.schedules.map(s=>s.session):pill?.sessions||[foundSess];
     for(const s of sessionsToClean){if(newLog[s]){newLog={...newLog,[s]:{...newLog[s]}};delete newLog[s][id];}}
+    if(pill){await logEvent(storedEvents,setStoredEvents,{type:"stopped",date:todayStr(),pillName:pill.name,dose:pill.dose||"",session:foundSess,pillId:id,eventType:"stopped"});}
     setPillList(newList);setTodayLog(newLog);await sbSet(PILL_LIST_KEY,newList);await sbSet(dayKey(todayStr()),newLog);
     generateTips(newList);
   }
@@ -1202,7 +1251,7 @@ function App(){
   if(loading)return(<div style={{minHeight:"100vh",background:"var(--bg)",display:"flex",alignItems:"center",justifyContent:"center"}}><div style={{color:"var(--t2)",fontSize:14}}>Loading…</div></div>);
   if(!USER_TOKEN)return <NoTokenView/>;
   if(!pillList)return(<div style={{minHeight:"100vh",background:"var(--bg)",display:"flex",alignItems:"center",justifyContent:"center"}}><div style={{color:"var(--t2)",fontSize:14}}>Loading…</div></div>);
-  if(view==="history")return(<><HistoryView view={view} setView={setView} selectedDay={selectedDay} setSelectedDay={setSelectedDay} history={history} setHistory={setHistory} pillList={pillList} archived={archived} sessions={sessions} toggleHistoryTaken={toggleHistoryTaken}/><TabBar view={view} setView={setView} setSelectedDay={setSelectedDay} hasNewTips={false}/></>);
+  if(view==="history")return(<><HistoryView view={view} setView={setView} selectedDay={selectedDay} setSelectedDay={setSelectedDay} history={history} setHistory={setHistory} pillList={pillList} archived={archived} sessions={sessions} toggleHistoryTaken={toggleHistoryTaken} storedEvents={storedEvents}/><TabBar view={view} setView={setView} setSelectedDay={setSelectedDay} hasNewTips={false}/></>);
   if(view==="settings")return(<><SettingsView view={view} setView={setView} setSelectedDay={setSelectedDay} profile={profile} setProfile={setProfile} pillList={pillList} archived={archived} setPillList={setPillList} setArchived={setArchived} fileInputRef={fileInputRef}/><TabBar view={view} setView={setView} setSelectedDay={setSelectedDay} hasNewTips={false}/></>);
   if(view==="nurse")return(<><TabBar view={view} setView={setView} setSelectedDay={setSelectedDay} hasNewTips={false}/><HealthAssistant pillList={pillList} profile={profile} msgs={nurseMsgs} setMsgs={setNurseMsgs}/></>);
 
@@ -1522,6 +1571,7 @@ function App(){
           for(const s of newSessList){if(s!=="as_needed"){newLog={...newLog,[s]:{...newLog[s],[newId]:false}};}}
           setTodayLog(newLog);await sbSet(dayKey(today),newLog);
           setPillList(newList);await sbSet(PILL_LIST_KEY,newList);
+          await logEvent(storedEvents,setStoredEvents,{type:"changed",date:today,pillName:old.name,oldDose:old.dose||"",newDose:rest.dose||"",session:foundSessForArchive,pillId:newId});
           setPendingVersionEdit(null);setDetailSheet(null);
         }} style={{width:"100%",padding:"14px",borderRadius:14,background:"var(--acc)",color:"#fff",fontSize:16,fontWeight:600,border:"none",cursor:"pointer",marginBottom:12}}>Confirmer le changement</button>
         <button onClick={()=>setPendingVersionEdit(null)} style={{width:"100%",padding:"12px",borderRadius:14,background:"transparent",color:"var(--t2)",fontSize:15,fontWeight:500,border:"none",cursor:"pointer"}}>Annuler</button>
@@ -1536,7 +1586,7 @@ ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
 </script>
 <script>
 if("serviceWorker"in navigator){
-  const sw='const C="pr-v139",A=[self.location.pathname];self.addEventListener("install",e=>{e.waitUntil(caches.open(C).then(c=>c.addAll(A)));self.skipWaiting();});self.addEventListener("activate",e=>{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==C).map(k=>caches.delete(k)))));self.clients.claim();});self.addEventListener("fetch",e=>{if(e.request.url.includes("supabase.co")){e.respondWith(fetch(e.request));return;}if(e.request.mode==="navigate"){e.respondWith(fetch(e.request).then(res=>{const cl=res.clone();caches.open(C).then(c=>c.put(e.request,cl));return res;}).catch(()=>caches.match(e.request).then(r=>r||caches.match(self.location.pathname))));return;}e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request).then(res=>{const cl=res.clone();caches.open(C).then(c=>c.put(e.request,cl));return res;})));});';
+  const sw='const C="pr-v140",A=[self.location.pathname];self.addEventListener("install",e=>{e.waitUntil(caches.open(C).then(c=>c.addAll(A)));self.skipWaiting();});self.addEventListener("activate",e=>{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==C).map(k=>caches.delete(k)))));self.clients.claim();});self.addEventListener("fetch",e=>{if(e.request.url.includes("supabase.co")){e.respondWith(fetch(e.request));return;}if(e.request.mode==="navigate"){e.respondWith(fetch(e.request).then(res=>{const cl=res.clone();caches.open(C).then(c=>c.put(e.request,cl));return res;}).catch(()=>caches.match(e.request).then(r=>r||caches.match(self.location.pathname))));return;}e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request).then(res=>{const cl=res.clone();caches.open(C).then(c=>c.put(e.request,cl));return res;})));});';
   navigator.serviceWorker.register(URL.createObjectURL(new Blob([sw],{type:"application/javascript"})),{scope:"./"}).catch(e=>console.warn(e));
 }
 </script>
