@@ -128,6 +128,7 @@ When a fix "still doesn't work," resist patching again. Diagnose first.
 - **GitHub Secret Scanning** blocks `sk-ant-api03-*` even in comments. Anthropic key lives in Supabase secrets only
 - **SW cache is isolated from Safari.** Version bump is mandatory on every meaningful commit
 - **Version string appears in exactly 2 places.** Verify count == 2 after every replace
+- **Dev-only icons:** The splash screen double-pill SVG and the PWA manifest favicon are intentionally different from prod. Do not port them to `cff/pill-reminder`. They exist solely to make dev visually identifiable at a glance.
 - **CSS transforms break `position:fixed` for descendants**, including a transform left behind by an animation's fill mode. Elements that must stay put (Assistant input, scroll button) are portaled to `body` to escape the `fade-up` container
 
 ---
