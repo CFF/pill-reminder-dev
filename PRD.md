@@ -159,3 +159,25 @@ Any patch that touches the as-needed data flow (timestamps, `asNeededStatus`, `t
 4. Include a one-line comment in the commit message naming the contract
 
 This protocol exists because a change to `count` derivation in pr-v101 introduced a bug where `timestamps[count-1]` indexed into a differently-sized array, showing yesterday's "last at" time instead of today's.
+
+---
+
+## Future vision — Condition-based treatment tracking
+
+**Concept:** Evolve Posology from a pill reminder into a personal treatment journal organized around medical conditions.
+
+**Core idea:** A medication doesn't exist in isolation — it's prescribed for a reason. Allowing users to associate a drug (active or archived) with a condition (e.g. "Prednisone → Autoimmune flare", "Ibuprofen → Chronic back pain") transforms the history view from a compliance log into a readable treatment narrative.
+
+**Use cases (not yet scoped):**
+- UC1: User links a medication to a condition when adding or editing it
+- UC2: History view can be filtered or grouped by condition
+- UC3: Archived medications remain visible under their condition — so a user can show a doctor the full treatment timeline for a given condition, including past drugs and doses
+- UC4: Nurse AI has condition context, enabling more relevant answers ("I'm managing X, currently on Y")
+
+**Why this matters:** Users managing chronic or complex conditions need more than "did I take my pill today." They need a record that makes sense to a doctor — what was tried, at what dose, for which condition, and when it changed.
+
+**Dependencies before this can be scoped:**
+- Medication versioning must be solved first (dose change history, multi-intake-per-drug model)
+- Condition entity needs definition: free text vs. ICD code lookup vs. user-defined tags
+
+**Status:** Vision only. Not scheduled.
