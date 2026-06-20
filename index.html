@@ -831,16 +831,16 @@ function HistoryView({view,setView,selectedDay,setSelectedDay,history,setHistory
                     if(ev.type==="added"){label="added";labelColor="var(--green)";}
                     else if(ev.type==="stopped"){label="stopped";labelColor="var(--red)";}
                     else if(ev.type==="expired"){label="end of treatment";labelColor="var(--t2)";}
-                    else if(ev.type==="changed"){label=null;}
+                    else if(ev.type==="changed"){label="dose changed";labelColor="var(--acc)";}
                     else{label=ev.type;labelColor="var(--t2)";}
+                    // line1: name + dose info + session. line2: status label
+                    const line1=ev.type==="changed"
+                      ?<>{pillName}{" "}<span style={{color:"var(--t3)",textDecoration:"line-through"}}>{ev.oldDose}</span>{" "}<span style={{color:"var(--acc)"}}>{"→"}</span>{" "}<span style={{fontWeight:600}}>{ev.newDose}</span>{sess?" · "+sess:""}</>
+                      :<>{pillName}{dose?" "+dose:""}{sess?" · "+sess:""}</>;
                     elements.push(<GroupRow key={key} first={isFirst}>
-                      <div style={{display:"flex",alignItems:"center",padding:"8px 16px"}}>
-                        <span style={{fontSize:14,color:"var(--t2)",lineHeight:1.4}}>
-                          {ev.type==="changed"
-                            ?<><span style={{fontWeight:600,color:"var(--t1)"}}>{pillName}</span>{" · "}<span style={{color:"var(--t3)",textDecoration:"line-through"}}>{ev.oldDose}</span>{" "}<span style={{color:"var(--acc)"}}>{"→"}</span>{" "}<span style={{fontWeight:600,color:"var(--t1)"}}>{ev.newDose}</span>{sess?" · "+sess:""}</>
-                            :<><span style={{fontWeight:600,color:"var(--t1)"}}>{pillName}{dose?" "+dose:""}</span>{sess?" · "+sess:""}{" · "}<span style={{color:labelColor,fontWeight:500}}>{label}</span></>
-                          }
-                        </span>
+                      <div style={{padding:"9px 16px"}}>
+                        <div style={{fontSize:15,fontWeight:500,color:"var(--t1)",lineHeight:1.3}}>{line1}</div>
+                        <div style={{fontSize:13,fontWeight:500,color:labelColor,marginTop:2}}>{label}</div>
                       </div>
                     </GroupRow>);
                   });
@@ -923,7 +923,7 @@ function SettingsView({profile,setProfile,pillList,archived,setPillList,setArchi
           <div style={{background:"var(--card)",borderRadius:16,overflow:"hidden",boxShadow:"var(--shadow-sm)"}}>
             <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"13px 16px"}}><span style={{fontSize:15,color:"var(--t2)"}}>App</span><span style={{fontSize:15,color:"var(--t1)",fontWeight:500}}>Posology</span></div>
             <div style={{height:"0.5px",background:"var(--sep)"}}/>
-            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"13px 16px"}}><span style={{fontSize:15,color:"var(--t2)"}}>Version</span><span style={{fontSize:15,color:"var(--t1)",fontWeight:500}}>pr-v143</span></div>
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"13px 16px"}}><span style={{fontSize:15,color:"var(--t2)"}}>Version</span><span style={{fontSize:15,color:"var(--t1)",fontWeight:500}}>pr-v144</span></div>
             <div style={{height:"0.5px",background:"var(--sep)"}}/>
             <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"13px 16px"}}><span style={{fontSize:15,color:"var(--t2)"}}>Storage</span><span style={{fontSize:15,color:"var(--t1)",fontWeight:500}}>Supabase</span></div>
           </div>
@@ -1583,7 +1583,7 @@ ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
 </script>
 <script>
 if("serviceWorker"in navigator){
-  const sw='const C="pr-v143",A=[self.location.pathname];self.addEventListener("install",e=>{e.waitUntil(caches.open(C).then(c=>c.addAll(A)));self.skipWaiting();});self.addEventListener("activate",e=>{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==C).map(k=>caches.delete(k)))));self.clients.claim();});self.addEventListener("fetch",e=>{if(e.request.url.includes("supabase.co")){e.respondWith(fetch(e.request));return;}if(e.request.mode==="navigate"){e.respondWith(fetch(e.request).then(res=>{const cl=res.clone();caches.open(C).then(c=>c.put(e.request,cl));return res;}).catch(()=>caches.match(e.request).then(r=>r||caches.match(self.location.pathname))));return;}e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request).then(res=>{const cl=res.clone();caches.open(C).then(c=>c.put(e.request,cl));return res;})));});';
+  const sw='const C="pr-v144",A=[self.location.pathname];self.addEventListener("install",e=>{e.waitUntil(caches.open(C).then(c=>c.addAll(A)));self.skipWaiting();});self.addEventListener("activate",e=>{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==C).map(k=>caches.delete(k)))));self.clients.claim();});self.addEventListener("fetch",e=>{if(e.request.url.includes("supabase.co")){e.respondWith(fetch(e.request));return;}if(e.request.mode==="navigate"){e.respondWith(fetch(e.request).then(res=>{const cl=res.clone();caches.open(C).then(c=>c.put(e.request,cl));return res;}).catch(()=>caches.match(e.request).then(r=>r||caches.match(self.location.pathname))));return;}e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request).then(res=>{const cl=res.clone();caches.open(C).then(c=>c.put(e.request,cl));return res;})));});';
   navigator.serviceWorker.register(URL.createObjectURL(new Blob([sw],{type:"application/javascript"})),{scope:"./"}).catch(e=>console.warn(e));
 }
 </script>
