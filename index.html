@@ -933,7 +933,7 @@ function SettingsView({profile,setProfile,pillList,archived,setPillList,setArchi
           <div style={{background:"var(--card)",borderRadius:16,overflow:"hidden",boxShadow:"var(--shadow-sm)"}}>
             <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"13px 16px"}}><span style={{fontSize:15,color:"var(--t2)"}}>App</span><span style={{fontSize:15,color:"var(--t1)",fontWeight:500}}>Posology</span></div>
             <div style={{height:"0.5px",background:"var(--sep)"}}/>
-            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"13px 16px"}}><span style={{fontSize:15,color:"var(--t2)"}}>Version</span><span style={{fontSize:15,color:"var(--t1)",fontWeight:500}}>pr-v145</span></div>
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"13px 16px"}}><span style={{fontSize:15,color:"var(--t2)"}}>Version</span><span style={{fontSize:15,color:"var(--t1)",fontWeight:500}}>pr-v146</span></div>
             <div style={{height:"0.5px",background:"var(--sep)"}}/>
             <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"13px 16px"}}><span style={{fontSize:15,color:"var(--t2)"}}>Storage</span><span style={{fontSize:15,color:"var(--t1)",fontWeight:500}}>Supabase</span></div>
           </div>
@@ -1208,7 +1208,7 @@ function App(){
     for(const s of sessList){if(s!=="as_needed")newLog={...newLog,[s]:{...newLog[s],[id]:false}};}
     setPillList(newList);setTodayLog(newLog);
     await sbSet(PILL_LIST_KEY,newList);await sbSet(dayKey(todayStr()),newLog);
-    const evtsAfterAdd=[...storedEvents,{type:"added",date:todayStr(),pillName:pill.name,dose:pill.dose||"",session:primarySess,pillId:id}];setStoredEvents(evtsAfterAdd);await sbSet(EVENTS_KEY,evtsAfterAdd);
+    const evtsAfterAdd=[{type:"added",date:todayStr(),pillName:pill.name,dose:pill.dose||"",session:primarySess,pillId:id},...storedEvents];setStoredEvents(evtsAfterAdd);await sbSet(EVENTS_KEY,evtsAfterAdd);
     setTipsLoading(true);
     setAddSheet(null);
     generateTips(newList);
@@ -1243,7 +1243,7 @@ function App(){
     let newLog={...todayLog};
     const sessionsToClean=pill?.schedules?pill.schedules.map(s=>s.session):pill?.sessions||[foundSess];
     for(const s of sessionsToClean){if(newLog[s]){newLog={...newLog,[s]:{...newLog[s]}};delete newLog[s][id];}}
-    if(pill){const evtsAfterDel=[...storedEvents,{type:"stopped",date:todayStr(),pillName:pill.name,dose:pill.dose||"",session:foundSess,pillId:id}];setStoredEvents(evtsAfterDel);await sbSet(EVENTS_KEY,evtsAfterDel);}
+    if(pill){const evtsAfterDel=[{type:"stopped",date:todayStr(),pillName:pill.name,dose:pill.dose||"",session:foundSess,pillId:id},...storedEvents];setStoredEvents(evtsAfterDel);await sbSet(EVENTS_KEY,evtsAfterDel);}
     setPillList(newList);setTodayLog(newLog);await sbSet(PILL_LIST_KEY,newList);await sbSet(dayKey(todayStr()),newLog);
     generateTips(newList);
   }
@@ -1578,7 +1578,7 @@ function App(){
           for(const s of newSessList){if(s!=="as_needed"){newLog={...newLog,[s]:{...newLog[s],[newId]:false}};}}
           setTodayLog(newLog);await sbSet(dayKey(today),newLog);
           setPillList(newList);await sbSet(PILL_LIST_KEY,newList);
-          const evtsAfterChange=[...storedEvents,{type:"changed",date:today,pillName:old.name,oldDose:old.dose||"",newDose:rest.dose||"",session:foundSessForArchive,pillId:newId}];setStoredEvents(evtsAfterChange);await sbSet(EVENTS_KEY,evtsAfterChange);
+          const evtsAfterChange=[{type:"changed",date:today,pillName:old.name,oldDose:old.dose||"",newDose:rest.dose||"",session:foundSessForArchive,pillId:newId},...storedEvents];setStoredEvents(evtsAfterChange);await sbSet(EVENTS_KEY,evtsAfterChange);
           setPendingVersionEdit(null);setDetailSheet(null);
         }} style={{width:"100%",padding:"14px",borderRadius:14,background:"var(--acc)",color:"#fff",fontSize:16,fontWeight:600,border:"none",cursor:"pointer",marginBottom:12}}>Confirmer le changement</button>
         <button onClick={()=>setPendingVersionEdit(null)} style={{width:"100%",padding:"12px",borderRadius:14,background:"transparent",color:"var(--t2)",fontSize:15,fontWeight:500,border:"none",cursor:"pointer"}}>Annuler</button>
@@ -1593,7 +1593,7 @@ ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
 </script>
 <script>
 if("serviceWorker"in navigator){
-  const sw='const C="pr-v145",A=[self.location.pathname];self.addEventListener("install",e=>{e.waitUntil(caches.open(C).then(c=>c.addAll(A)));self.skipWaiting();});self.addEventListener("activate",e=>{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==C).map(k=>caches.delete(k)))));self.clients.claim();});self.addEventListener("fetch",e=>{if(e.request.url.includes("supabase.co")){e.respondWith(fetch(e.request));return;}if(e.request.mode==="navigate"){e.respondWith(fetch(e.request).then(res=>{const cl=res.clone();caches.open(C).then(c=>c.put(e.request,cl));return res;}).catch(()=>caches.match(e.request).then(r=>r||caches.match(self.location.pathname))));return;}e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request).then(res=>{const cl=res.clone();caches.open(C).then(c=>c.put(e.request,cl));return res;})));});';
+  const sw='const C="pr-v146",A=[self.location.pathname];self.addEventListener("install",e=>{e.waitUntil(caches.open(C).then(c=>c.addAll(A)));self.skipWaiting();});self.addEventListener("activate",e=>{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==C).map(k=>caches.delete(k)))));self.clients.claim();});self.addEventListener("fetch",e=>{if(e.request.url.includes("supabase.co")){e.respondWith(fetch(e.request));return;}if(e.request.mode==="navigate"){e.respondWith(fetch(e.request).then(res=>{const cl=res.clone();caches.open(C).then(c=>c.put(e.request,cl));return res;}).catch(()=>caches.match(e.request).then(r=>r||caches.match(self.location.pathname))));return;}e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request).then(res=>{const cl=res.clone();caches.open(C).then(c=>c.put(e.request,cl));return res;})));});';
   navigator.serviceWorker.register(URL.createObjectURL(new Blob([sw],{type:"application/javascript"})),{scope:"./"}).catch(e=>console.warn(e));
 }
 </script>
