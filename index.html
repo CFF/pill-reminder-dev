@@ -881,7 +881,7 @@ function SettingsView({profile,setProfile,pillList,archived,setPillList,setArchi
           <div style={{background:"var(--card)",borderRadius:16,overflow:"hidden",boxShadow:"var(--shadow-sm)"}}>
             <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"13px 16px"}}><span style={{fontSize:15,color:"var(--t2)"}}>App</span><span style={{fontSize:15,color:"var(--t1)",fontWeight:500}}>Posology</span></div>
             <div style={{height:"0.5px",background:"var(--sep)"}}/>
-            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"13px 16px"}}><span style={{fontSize:15,color:"var(--t2)"}}>Version</span><span style={{fontSize:15,color:"var(--t1)",fontWeight:500}}>pr-v137</span></div>
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"13px 16px"}}><span style={{fontSize:15,color:"var(--t2)"}}>Version</span><span style={{fontSize:15,color:"var(--t1)",fontWeight:500}}>pr-v138</span></div>
             <div style={{height:"0.5px",background:"var(--sep)"}}/>
             <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"13px 16px"}}><span style={{fontSize:15,color:"var(--t2)"}}>Storage</span><span style={{fontSize:15,color:"var(--t1)",fontWeight:500}}>Supabase</span></div>
           </div>
@@ -986,6 +986,7 @@ function App(){
   const [installPrompt,setInstallPrompt]=useState(null);
   const [installed,setInstalled]=useState(false);
   const [detailSheet,setDetailSheet]=useState(null);
+  const [pendingVersionEdit,setPendingVersionEdit]=useState(null);
   const [missedDtStr,setMissedDtStr]=useState(null);
   const [addSheet,setAddSheet]=useState(null);
   const [profile,setProfile]=useState({name:"",age:"",weight:"",height:""});
@@ -1457,19 +1458,27 @@ function App(){
           onSave={async(data)=>{
             const id=detailSheet.pill.id;
             const{schedules:newSchedules=[],sessions:newSessions,...rest}=data;
-            let newList={...pillList};
+            // as_needed: no versioning, just overwrite
             if(detailSheet.session==="as_needed"){
               const updatedPill={...detailSheet.pill,...rest,schedules:[],sessions:["as_needed"]};
-              newList={...pillList,as_needed:(pillList.as_needed||[]).map(p=>p.id===id?updatedPill:p)};
+              const newList={...pillList,as_needed:(pillList.as_needed||[]).map(p=>p.id===id?updatedPill:p)};
               setPillList(newList);await sbSet(PILL_LIST_KEY,newList);setDetailSheet(null);return;
             }
-            const oldSchedules=detailSheet.pill.schedules||[{session:detailSheet.session,timing:""}];
+            // detect clinical change: dose, schedules, startDate, durationDays
+            const old=detailSheet.pill;
+            const oldSchedStr=JSON.stringify((old.schedules||[{session:detailSheet.session,timing:""}]).map(s=>({session:s.session,timing:s.timing||""})));
+            const newSchedStr=JSON.stringify((newSchedules||[]).map(s=>({session:s.session,timing:s.timing||""})));
+            const clinicalChanged=(rest.dosageAmt!==old.dosageAmt||rest.dosageUnit!==old.dosageUnit||rest.dose!==old.dose||rest.startDate!==old.startDate||rest.durationDays!==old.durationDays||oldSchedStr!==newSchedStr);
+            if(clinicalChanged){setPendingVersionEdit({id,data,newSchedules,newSessions,rest});return;}
+            // cosmetic change only: overwrite in place
+            const oldSchedules=old.schedules||[{session:detailSheet.session,timing:""}];
             const oldSessions=oldSchedules.map(s=>s.session);
             const newSessList=newSchedules.map(s=>s.session);
             let primarySess=oldSessions[0];
             for(const s of["morning","lunch","evening"]){if((pillList[s]||[]).find(p=>p.id===id)){primarySess=s;break;}}
             const newPrimarySess=newSessList[0]||primarySess;
-            const updatedPill={...detailSheet.pill,...rest,schedules:newSchedules,sessions:newSessList};
+            const updatedPill={...old,...rest,schedules:newSchedules,sessions:newSessList};
+            let newList={...pillList};
             if(newPrimarySess!==primarySess){newList[primarySess]=(newList[primarySess]||[]).filter(p=>p.id!==id);newList[newPrimarySess]=[...(newList[newPrimarySess]||[]),updatedPill];}
             else{newList[primarySess]=(newList[primarySess]||[]).map(p=>p.id===id?updatedPill:p);}
             let newLog={...todayLog};
@@ -1482,6 +1491,42 @@ function App(){
         />
       </div>
     </BottomSheet>)}
+    {pendingVersionEdit&&(<div style={{position:"fixed",inset:0,zIndex:9999,display:"flex",alignItems:"flex-end",justifyContent:"center",background:"rgba(0,0,0,0.4)"}} onClick={()=>setPendingVersionEdit(null)}>
+      <div style={{width:"100%",maxWidth:480,background:"var(--card)",borderRadius:"20px 20px 0 0",padding:"28px 20px calc(28px + env(safe-area-inset-bottom))",boxShadow:"0 -4px 24px rgba(0,0,0,0.15)"}} onClick={e=>e.stopPropagation()}>
+        <div style={{fontSize:18,fontWeight:700,color:"var(--t1)",marginBottom:8}}>Changement de dose</div>
+        <div style={{fontSize:15,color:"var(--t2)",lineHeight:1.5,marginBottom:24}}>Ce changement s'appliquera à partir d'aujourd'hui. L'historique passé sera conservé tel quel avec l'ancienne dose.</div>
+        <button onClick={async()=>{
+          const{id,data,newSchedules,newSessions,rest}=pendingVersionEdit;
+          const old=detailSheet.pill;
+          const today=todayStr();
+          // 1. archive the old pill version with endDate=today
+          const existingArchived=await sbGet(ARCHIVED_KEY)||{morning:[],lunch:[],evening:[]};
+          let foundSessForArchive="morning";
+          for(const s of["morning","lunch","evening"]){if((pillList[s]||[]).find(p=>p.id===id)){foundSessForArchive=s;break;}}
+          const archivedPill={...old,endDate:today,archivedOn:today};
+          const newArchived={...existingArchived,[foundSessForArchive]:[...(existingArchived[foundSessForArchive]||[]),archivedPill]};
+          await sbSet(ARCHIVED_KEY,newArchived);setArchived(newArchived);
+          // 2. create new pill with new ID, startDate=today
+          const newSessList=(newSchedules||[]).map(s=>s.session);
+          const primarySess=newSessList[0]||foundSessForArchive;
+          const newId=primarySess[0]+Date.now();
+          const newPill={...old,...rest,id:newId,schedules:newSchedules||[],sessions:newSessList,startDate:today};
+          // 3. remove old pill from pillList, add new one
+          let newList={...pillList};
+          newList[foundSessForArchive]=(newList[foundSessForArchive]||[]).filter(p=>p.id!==id);
+          if(primarySess!==foundSessForArchive){newList[primarySess]=[...(newList[primarySess]||[]),newPill];}
+          else{newList[foundSessForArchive]=[...newList[foundSessForArchive],newPill];}
+          // 4. update today's log: remove old id, add new id as false
+          let newLog={...todayLog};
+          for(const s of["morning","lunch","evening"]){if(newLog[s]&&newLog[s][id]!==undefined){newLog={...newLog,[s]:{...newLog[s]}};delete newLog[s][id];}}
+          for(const s of newSessList){if(s!=="as_needed"){newLog={...newLog,[s]:{...newLog[s],[newId]:false}};}}
+          setTodayLog(newLog);await sbSet(dayKey(today),newLog);
+          setPillList(newList);await sbSet(PILL_LIST_KEY,newList);
+          setPendingVersionEdit(null);setDetailSheet(null);
+        }} style={{width:"100%",padding:"14px",borderRadius:14,background:"var(--acc)",color:"#fff",fontSize:16,fontWeight:600,border:"none",cursor:"pointer",marginBottom:12}}>Confirmer le changement</button>
+        <button onClick={()=>setPendingVersionEdit(null)} style={{width:"100%",padding:"12px",borderRadius:14,background:"transparent",color:"var(--t2)",fontSize:15,fontWeight:500,border:"none",cursor:"pointer"}}>Annuler</button>
+      </div>
+    </div>)}
     <TabBar view={view} setView={setView} setSelectedDay={setSelectedDay} hasNewTips={hasNewTips}/>
 
   </>);
@@ -1491,7 +1536,7 @@ ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
 </script>
 <script>
 if("serviceWorker"in navigator){
-  const sw='const C="pr-v137",A=[self.location.pathname];self.addEventListener("install",e=>{e.waitUntil(caches.open(C).then(c=>c.addAll(A)));self.skipWaiting();});self.addEventListener("activate",e=>{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==C).map(k=>caches.delete(k)))));self.clients.claim();});self.addEventListener("fetch",e=>{if(e.request.url.includes("supabase.co")){e.respondWith(fetch(e.request));return;}if(e.request.mode==="navigate"){e.respondWith(fetch(e.request).then(res=>{const cl=res.clone();caches.open(C).then(c=>c.put(e.request,cl));return res;}).catch(()=>caches.match(e.request).then(r=>r||caches.match(self.location.pathname))));return;}e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request).then(res=>{const cl=res.clone();caches.open(C).then(c=>c.put(e.request,cl));return res;})));});';
+  const sw='const C="pr-v138",A=[self.location.pathname];self.addEventListener("install",e=>{e.waitUntil(caches.open(C).then(c=>c.addAll(A)));self.skipWaiting();});self.addEventListener("activate",e=>{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==C).map(k=>caches.delete(k)))));self.clients.claim();});self.addEventListener("fetch",e=>{if(e.request.url.includes("supabase.co")){e.respondWith(fetch(e.request));return;}if(e.request.mode==="navigate"){e.respondWith(fetch(e.request).then(res=>{const cl=res.clone();caches.open(C).then(c=>c.put(e.request,cl));return res;}).catch(()=>caches.match(e.request).then(r=>r||caches.match(self.location.pathname))));return;}e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request).then(res=>{const cl=res.clone();caches.open(C).then(c=>c.put(e.request,cl));return res;})));});';
   navigator.serviceWorker.register(URL.createObjectURL(new Blob([sw],{type:"application/javascript"})),{scope:"./"}).catch(e=>console.warn(e));
 }
 </script>
