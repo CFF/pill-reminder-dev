@@ -726,22 +726,25 @@ function HistoryView({view,setView,selectedDay,setSelectedDay,history,setHistory
     setLoadingMore(false);
   }
 
-  // Build event map: storedEvents (from pr:events) + synthetic events from archived
+  // Build event map: stored events first (newest first), then synthetic from archived
+  // Stored events take priority — suppress synthetic if same pillId already covered
   const eventsByDate={};
-  const addEvt=(date,evt)=>{if(!eventsByDate[date])eventsByDate[date]=[];eventsByDate[date].push(evt);};
-  // Synthetic: expired pills (durationDays ran out) and stopped pills (manually deleted/versioned)
+  const coveredPillIds=new Set((storedEvents||[]).map(e=>e.pillId).filter(Boolean));
+  // Stored events first (already newest-first from pr:events)
+  for(const ev of(storedEvents||[])){
+    if(!eventsByDate[ev.date])eventsByDate[ev.date]=[];
+    eventsByDate[ev.date].push(ev);
+  }
+  // Synthetic from archived — only if not already covered by a stored event
   for(const session of["morning","lunch","evening"]){
     for(const pill of(archived[session]||[])){
       if(!pill.endDate)continue;
-      const type=pill.eventType||( pill.durationDays!=null?"expired":"stopped");
-      addEvt(pill.endDate,{type,pill,session});
+      if(coveredPillIds.has(pill.id))continue;
+      const type=pill.eventType||(pill.durationDays!=null?"expired":"stopped");
+      if(!eventsByDate[pill.endDate])eventsByDate[pill.endDate]=[];
+      eventsByDate[pill.endDate].push({type,pill,session});
     }
   }
-  // Stored events (added, changed, stopped from pr:events)
-  for(const ev of(storedEvents||[])){
-    addEvt(ev.date,ev);
-  }
-  // archiveByDate kept for allDates union
   const archiveByDate=eventsByDate;
 
   return(<div style={{minHeight:"100vh",background:"var(--bg)",paddingBottom:"calc(90px + env(safe-area-inset-bottom,0px))"}} className="fade-up scroll-view">
@@ -933,7 +936,7 @@ function SettingsView({profile,setProfile,pillList,archived,setPillList,setArchi
           <div style={{background:"var(--card)",borderRadius:16,overflow:"hidden",boxShadow:"var(--shadow-sm)"}}>
             <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"13px 16px"}}><span style={{fontSize:15,color:"var(--t2)"}}>App</span><span style={{fontSize:15,color:"var(--t1)",fontWeight:500}}>Posology</span></div>
             <div style={{height:"0.5px",background:"var(--sep)"}}/>
-            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"13px 16px"}}><span style={{fontSize:15,color:"var(--t2)"}}>Version</span><span style={{fontSize:15,color:"var(--t1)",fontWeight:500}}>pr-v146</span></div>
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"13px 16px"}}><span style={{fontSize:15,color:"var(--t2)"}}>Version</span><span style={{fontSize:15,color:"var(--t1)",fontWeight:500}}>pr-v147</span></div>
             <div style={{height:"0.5px",background:"var(--sep)"}}/>
             <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"13px 16px"}}><span style={{fontSize:15,color:"var(--t2)"}}>Storage</span><span style={{fontSize:15,color:"var(--t1)",fontWeight:500}}>Supabase</span></div>
           </div>
@@ -1593,7 +1596,7 @@ ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
 </script>
 <script>
 if("serviceWorker"in navigator){
-  const sw='const C="pr-v146",A=[self.location.pathname];self.addEventListener("install",e=>{e.waitUntil(caches.open(C).then(c=>c.addAll(A)));self.skipWaiting();});self.addEventListener("activate",e=>{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==C).map(k=>caches.delete(k)))));self.clients.claim();});self.addEventListener("fetch",e=>{if(e.request.url.includes("supabase.co")){e.respondWith(fetch(e.request));return;}if(e.request.mode==="navigate"){e.respondWith(fetch(e.request).then(res=>{const cl=res.clone();caches.open(C).then(c=>c.put(e.request,cl));return res;}).catch(()=>caches.match(e.request).then(r=>r||caches.match(self.location.pathname))));return;}e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request).then(res=>{const cl=res.clone();caches.open(C).then(c=>c.put(e.request,cl));return res;})));});';
+  const sw='const C="pr-v147",A=[self.location.pathname];self.addEventListener("install",e=>{e.waitUntil(caches.open(C).then(c=>c.addAll(A)));self.skipWaiting();});self.addEventListener("activate",e=>{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==C).map(k=>caches.delete(k)))));self.clients.claim();});self.addEventListener("fetch",e=>{if(e.request.url.includes("supabase.co")){e.respondWith(fetch(e.request));return;}if(e.request.mode==="navigate"){e.respondWith(fetch(e.request).then(res=>{const cl=res.clone();caches.open(C).then(c=>c.put(e.request,cl));return res;}).catch(()=>caches.match(e.request).then(r=>r||caches.match(self.location.pathname))));return;}e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request).then(res=>{const cl=res.clone();caches.open(C).then(c=>c.put(e.request,cl));return res;})));});';
   navigator.serviceWorker.register(URL.createObjectURL(new Blob([sw],{type:"application/javascript"})),{scope:"./"}).catch(e=>console.warn(e));
 }
 </script>
