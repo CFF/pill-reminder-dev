@@ -936,7 +936,7 @@ function SettingsView({profile,setProfile,pillList,archived,setPillList,setArchi
           <div style={{background:"var(--card)",borderRadius:16,overflow:"hidden",boxShadow:"var(--shadow-sm)"}}>
             <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"13px 16px"}}><span style={{fontSize:15,color:"var(--t2)"}}>App</span><span style={{fontSize:15,color:"var(--t1)",fontWeight:500}}>Posology</span></div>
             <div style={{height:"0.5px",background:"var(--sep)"}}/>
-            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"13px 16px"}}><span style={{fontSize:15,color:"var(--t2)"}}>Version</span><span style={{fontSize:15,color:"var(--t1)",fontWeight:500}}>pr-v147</span></div>
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"13px 16px"}}><span style={{fontSize:15,color:"var(--t2)"}}>Version</span><span style={{fontSize:15,color:"var(--t1)",fontWeight:500}}>pr-v148</span></div>
             <div style={{height:"0.5px",background:"var(--sep)"}}/>
             <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"13px 16px"}}><span style={{fontSize:15,color:"var(--t2)"}}>Storage</span><span style={{fontSize:15,color:"var(--t1)",fontWeight:500}}>Supabase</span></div>
           </div>
@@ -1042,6 +1042,7 @@ function App(){
   const [installed,setInstalled]=useState(false);
   const [detailSheet,setDetailSheet]=useState(null);
   const [pendingVersionEdit,setPendingVersionEdit]=useState(null);
+  const [versionInventory,setVersionInventory]=useState("");
   const [storedEvents,setStoredEvents]=useState([]);
   const [missedDtStr,setMissedDtStr]=useState(null);
   const [addSheet,setAddSheet]=useState(null);
@@ -1553,7 +1554,22 @@ function App(){
     {pendingVersionEdit&&(<div style={{position:"fixed",inset:0,zIndex:9999,display:"flex",alignItems:"flex-end",justifyContent:"center",background:"rgba(0,0,0,0.4)"}} onClick={()=>setPendingVersionEdit(null)}>
       <div style={{width:"100%",maxWidth:480,background:"var(--card)",borderRadius:"20px 20px 0 0",padding:"28px 20px calc(28px + env(safe-area-inset-bottom))",boxShadow:"0 -4px 24px rgba(0,0,0,0.15)"}} onClick={e=>e.stopPropagation()}>
         <div style={{fontSize:18,fontWeight:700,color:"var(--t1)",marginBottom:8}}>Changement de dose</div>
-        <div style={{fontSize:15,color:"var(--t2)",lineHeight:1.5,marginBottom:24}}>Ce changement s'appliquera à partir d'aujourd'hui. L'historique passé sera conservé tel quel avec l'ancienne dose.</div>
+        <div style={{fontSize:15,color:"var(--t2)",lineHeight:1.5,marginBottom:20}}>Ce changement s'appliquera à partir d'aujourd'hui. L'historique passé sera conservé tel quel avec l'ancienne dose.</div>
+        <div style={{marginBottom:20}}>
+          <div style={{fontSize:13,fontWeight:600,color:"var(--t2)",marginBottom:6}}>Comprimés reçus du pharmacien <span style={{fontWeight:400,color:"var(--t3)"}}>(optionnel)</span></div>
+          <input
+            type="text" inputMode="decimal"
+            placeholder="ex: 60"
+            value={versionInventory}
+            onChange={e=>setVersionInventory(e.target.value.replace(/[^0-9]/g,""))}
+            style={{width:"100%",padding:"13px 14px",borderRadius:12,border:"1.5px solid var(--sep)",background:"var(--bg)",color:"var(--t1)",fontSize:16,outline:"none"}}
+          />
+          {versionInventory&&parseInt(versionInventory)>0&&pendingVersionEdit&&(()=>{
+            const dosesPerDay=(pendingVersionEdit.newSchedules||[{session:"morning"}]).filter(s=>s.session!=="as_needed").length||1;
+            const days=Math.floor(parseInt(versionInventory)/dosesPerDay);
+            return <div style={{fontSize:13,color:"var(--t2)",marginTop:6}}>Fin estimée : {(()=>{const d=new Date();d.setDate(d.getDate()+days);return d.toLocaleDateString("fr-CA");})()}</div>;
+          })()}
+        </div>
         <button onClick={async()=>{
           const{id,data,newSchedules,newSessions,rest}=pendingVersionEdit;
           const old=detailSheet.pill;
@@ -1565,11 +1581,16 @@ function App(){
           const archivedPill={...old,endDate:today,archivedOn:today};
           const newArchived={...existingArchived,[foundSessForArchive]:[...(existingArchived[foundSessForArchive]||[]),archivedPill]};
           await sbSet(ARCHIVED_KEY,newArchived);setArchived(newArchived);
-          // 2. create new pill with new ID, startDate=today
+          // 2. create new pill with new ID, startDate=today, optional inventory
           const newSessList=(newSchedules||[]).map(s=>s.session);
           const primarySess=newSessList[0]||foundSessForArchive;
           const newId=primarySess[0]+Date.now();
-          const newPill={...old,...rest,id:newId,schedules:newSchedules||[],sessions:newSessList,startDate:today};
+          const invCount=versionInventory?parseInt(versionInventory):null;
+          const dosesPerDay=newSessList.filter(s=>s!=="as_needed").length||1;
+          const newDurationDays=invCount&&invCount>0?Math.floor(invCount/dosesPerDay):rest.durationDays;
+          const newPill={...old,...rest,id:newId,schedules:newSchedules||[],sessions:newSessList,startDate:today,
+            ...(invCount&&invCount>0?{hasInventory:true,inventoryCount:invCount,inventoryStartDate:today,durationDays:newDurationDays}:{})
+          };
           // 3. remove old pill from pillList, add new one
           let newList={...pillList};
           newList[foundSessForArchive]=(newList[foundSessForArchive]||[]).filter(p=>p.id!==id);
@@ -1582,9 +1603,9 @@ function App(){
           setTodayLog(newLog);await sbSet(dayKey(today),newLog);
           setPillList(newList);await sbSet(PILL_LIST_KEY,newList);
           const evtsAfterChange=[{type:"changed",date:today,pillName:old.name,oldDose:old.dose||"",newDose:rest.dose||"",session:foundSessForArchive,pillId:newId},...storedEvents];setStoredEvents(evtsAfterChange);await sbSet(EVENTS_KEY,evtsAfterChange);
-          setPendingVersionEdit(null);setDetailSheet(null);
+          setVersionInventory("");setPendingVersionEdit(null);setDetailSheet(null);
         }} style={{width:"100%",padding:"14px",borderRadius:14,background:"var(--acc)",color:"#fff",fontSize:16,fontWeight:600,border:"none",cursor:"pointer",marginBottom:12}}>Confirmer le changement</button>
-        <button onClick={()=>setPendingVersionEdit(null)} style={{width:"100%",padding:"12px",borderRadius:14,background:"transparent",color:"var(--t2)",fontSize:15,fontWeight:500,border:"none",cursor:"pointer"}}>Annuler</button>
+        <button onClick={()=>{setVersionInventory("");setPendingVersionEdit(null);}} style={{width:"100%",padding:"12px",borderRadius:14,background:"transparent",color:"var(--t2)",fontSize:15,fontWeight:500,border:"none",cursor:"pointer"}}>Annuler</button>
       </div>
     </div>)}
     <TabBar view={view} setView={setView} setSelectedDay={setSelectedDay} hasNewTips={hasNewTips}/>
@@ -1596,7 +1617,7 @@ ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
 </script>
 <script>
 if("serviceWorker"in navigator){
-  const sw='const C="pr-v147",A=[self.location.pathname];self.addEventListener("install",e=>{e.waitUntil(caches.open(C).then(c=>c.addAll(A)));self.skipWaiting();});self.addEventListener("activate",e=>{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==C).map(k=>caches.delete(k)))));self.clients.claim();});self.addEventListener("fetch",e=>{if(e.request.url.includes("supabase.co")){e.respondWith(fetch(e.request));return;}if(e.request.mode==="navigate"){e.respondWith(fetch(e.request).then(res=>{const cl=res.clone();caches.open(C).then(c=>c.put(e.request,cl));return res;}).catch(()=>caches.match(e.request).then(r=>r||caches.match(self.location.pathname))));return;}e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request).then(res=>{const cl=res.clone();caches.open(C).then(c=>c.put(e.request,cl));return res;})));});';
+  const sw='const C="pr-v148",A=[self.location.pathname];self.addEventListener("install",e=>{e.waitUntil(caches.open(C).then(c=>c.addAll(A)));self.skipWaiting();});self.addEventListener("activate",e=>{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==C).map(k=>caches.delete(k)))));self.clients.claim();});self.addEventListener("fetch",e=>{if(e.request.url.includes("supabase.co")){e.respondWith(fetch(e.request));return;}if(e.request.mode==="navigate"){e.respondWith(fetch(e.request).then(res=>{const cl=res.clone();caches.open(C).then(c=>c.put(e.request,cl));return res;}).catch(()=>caches.match(e.request).then(r=>r||caches.match(self.location.pathname))));return;}e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request).then(res=>{const cl=res.clone();caches.open(C).then(c=>c.put(e.request,cl));return res;})));});';
   navigator.serviceWorker.register(URL.createObjectURL(new Blob([sw],{type:"application/javascript"})),{scope:"./"}).catch(e=>console.warn(e));
 }
 </script>
