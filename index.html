@@ -342,17 +342,31 @@ function PillForm({initial,accent,onSave,onCancel,submitLabel="Add",defaultSessi
     setScanLoading(true);
     try{
       const b64=await new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result.split(",")[1]);r.onerror=rej;r.readAsDataURL(file);});
-      const fetchRes=await fetch("https://fotzkqkghxndjnomrspr.supabase.co/functions/v1/nurse-chat",{method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZvdHprcWtnaHhuZGpub21yc3ByIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA4MTg0MTMsImV4cCI6MjA5NjM5NDQxM30.o8AyVFlhd_g0NbdB1hd28x8ERxmCO4OjXPuwVoCJano"},body:JSON.stringify({system:"",messages:[{role:"user",content:[{type:"image",source:{type:"base64",media_type:file.type,data:b64}},{type:"text",text:"This is a pharmacy label or medication packaging. Extract info and respond ONLY with valid JSON, no markdown, no explanation. Fields: name (string), dosageAmt (number or null), dosageUnit (string or null), quantity (number, default 1), session (one of morning/lunch/evening or null), timing (one of with_meal/before_meal/after_meal or null), durationDays (number or null), ongoing (boolean)"}]}]})});
+      const fetchRes=await fetch("https://fotzkqkghxndjnomrspr.supabase.co/functions/v1/nurse-chat",{method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZvdHprcWtnaHhuZGpub21yc3ByIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA4MTg0MTMsImV4cCI6MjA5NjM5NDQxM30.o8AyVFlhd_g0NbdB1hd28x8ERxmCO4OjXPuwVoCJano"},body:JSON.stringify({system:"",messages:[{role:"user",content:[{type:"image",source:{type:"base64",media_type:file.type,data:b64}},{type:"text",text:"This is a pharmacy label or medication packaging. Extract all dosing schedules and respond ONLY with a valid JSON array, no markdown, no explanation. Each element represents one intake per day. Fields per element: name (string), dosageAmt (number or null), dosageUnit (string or null), quantity (number, default 1), session (one of morning/lunch/evening), timing (one of with_meal/before_meal/after_meal or null), durationDays (number or null), ongoing (boolean). If the medication is taken twice daily, return two objects. If once, return one object."}]}]})});
       const data=await fetchRes.json();
       const text=data.content?.find(b=>b.type==="text")?.text||"";
-      const parsed=JSON.parse(text.replace(/```json|```/g,"").trim());
-      if(parsed.name)setName(parsed.name);
-      if(parsed.dosageAmt)setDosageAmt(Number(parsed.dosageAmt));
-      if(parsed.dosageUnit)setDosageUnit(parsed.dosageUnit);
-      if(parsed.quantity)setQuantity(Number(parsed.quantity));
-      if(parsed.session)setSchedules([{session:parsed.session,timing:parsed.timing||""}]);
-      if(parsed.durationDays){setDurationDays(Number(parsed.durationDays));setOngoing(false);}
-      else if(parsed.ongoing)setOngoing(true);
+      const rawParsed=JSON.parse(text.replace(/```json|```/g,"").trim());
+      const entries=Array.isArray(rawParsed)?rawParsed:[rawParsed];
+      if(entries.length===1){
+        const p=entries[0];
+        if(p.name)setName(p.name);
+        if(p.dosageAmt)setDosageAmt(Number(p.dosageAmt));
+        if(p.dosageUnit)setDosageUnit(p.dosageUnit);
+        if(p.quantity)setQuantity(Number(p.quantity));
+        if(p.session)setSchedules([{session:p.session,timing:p.timing||""}]);
+        if(p.durationDays){setDurationDays(Number(p.durationDays));setOngoing(false);}
+        else if(p.ongoing)setOngoing(true);
+      } else {
+        // Multiple intakes: save each as a separate pill entry
+        for(const p of entries){
+          if(!p.name)continue;
+          const dose=(p.quantity||1)+" x "+(p.dosageAmt||"")+( p.dosageUnit||"");
+          const sess=p.session||"morning";
+          const scheduleEntry=[{session:sess,timing:p.timing||""}];
+          const dur=p.durationDays?Number(p.durationDays):null;
+          onSave({name:p.name.trim(),dose,dosageAmt:p.dosageAmt,dosageUnit:p.dosageUnit,quantity:p.quantity||1,shape:"capsule",schedules:scheduleEntry,sessions:[sess],startDate:new Date().toISOString().slice(0,10),durationDays:dur,asNeeded:false,maxDailyDose:null,minIntervalHours:null});
+        }
+      }
     }catch(err){console.error("Scan error",err);alert("Scan failed — please fill in manually.");}
     finally{setScanLoading(false);if(imageInputRef.current)imageInputRef.current.value="";}
   }
@@ -936,7 +950,7 @@ function SettingsView({profile,setProfile,pillList,archived,setPillList,setArchi
           <div style={{background:"var(--card)",borderRadius:16,overflow:"hidden",boxShadow:"var(--shadow-sm)"}}>
             <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"13px 16px"}}><span style={{fontSize:15,color:"var(--t2)"}}>App</span><span style={{fontSize:15,color:"var(--t1)",fontWeight:500}}>Posology</span></div>
             <div style={{height:"0.5px",background:"var(--sep)"}}/>
-            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"13px 16px"}}><span style={{fontSize:15,color:"var(--t2)"}}>Version</span><span style={{fontSize:15,color:"var(--t1)",fontWeight:500}}>pr-v151</span></div>
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"13px 16px"}}><span style={{fontSize:15,color:"var(--t2)"}}>Version</span><span style={{fontSize:15,color:"var(--t1)",fontWeight:500}}>pr-v152</span></div>
             <div style={{height:"0.5px",background:"var(--sep)"}}/>
             <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"13px 16px"}}><span style={{fontSize:15,color:"var(--t2)"}}>Storage</span><span style={{fontSize:15,color:"var(--t1)",fontWeight:500}}>Supabase</span></div>
           </div>
@@ -1617,7 +1631,7 @@ ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
 </script>
 <script>
 if("serviceWorker"in navigator){
-  const sw='const C="pr-v151",A=[self.location.pathname];self.addEventListener("install",e=>{e.waitUntil(caches.open(C).then(c=>c.addAll(A)));self.skipWaiting();});self.addEventListener("activate",e=>{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==C).map(k=>caches.delete(k)))));self.clients.claim();});self.addEventListener("fetch",e=>{if(e.request.url.includes("supabase.co")){e.respondWith(fetch(e.request));return;}if(e.request.mode==="navigate"){e.respondWith(fetch(e.request).then(res=>{const cl=res.clone();caches.open(C).then(c=>c.put(e.request,cl));return res;}).catch(()=>caches.match(e.request).then(r=>r||caches.match(self.location.pathname))));return;}e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request).then(res=>{const cl=res.clone();caches.open(C).then(c=>c.put(e.request,cl));return res;})));});';
+  const sw='const C="pr-v152",A=[self.location.pathname];self.addEventListener("install",e=>{e.waitUntil(caches.open(C).then(c=>c.addAll(A)));self.skipWaiting();});self.addEventListener("activate",e=>{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==C).map(k=>caches.delete(k)))));self.clients.claim();});self.addEventListener("fetch",e=>{if(e.request.url.includes("supabase.co")){e.respondWith(fetch(e.request));return;}if(e.request.mode==="navigate"){e.respondWith(fetch(e.request).then(res=>{const cl=res.clone();caches.open(C).then(c=>c.put(e.request,cl));return res;}).catch(()=>caches.match(e.request).then(r=>r||caches.match(self.location.pathname))));return;}e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request).then(res=>{const cl=res.clone();caches.open(C).then(c=>c.put(e.request,cl));return res;})));});';
   navigator.serviceWorker.register(URL.createObjectURL(new Blob([sw],{type:"application/javascript"})),{scope:"./"}).catch(e=>console.warn(e));
 }
 </script>
