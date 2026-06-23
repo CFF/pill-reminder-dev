@@ -922,7 +922,7 @@ function SettingsView({profile,setProfile,pillList,archived,setPillList,setArchi
               const logs={};for(const r of days)logs[r.key.replace("pr:day:","")]=r.value;
               const data={pillList,archived,logs,profile,exportedAt:new Date().toISOString()};
               const blob=new Blob([JSON.stringify(data,null,2)],{type:"application/json"});
-              const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download="posology-backup.json";a.click();URL.revokeObjectURL(url);
+              const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download=`posology-backup-${new Date().toISOString().slice(0,10)}.json`;a.click();URL.revokeObjectURL(url);
             }} style={{width:"100%",display:"flex",alignItems:"center",justifyContent:"space-between",padding:"15px 16px",background:"transparent",color:"var(--t1)",fontSize:15,fontWeight:500,textAlign:"left"}}>Create backup<span style={{fontSize:13,color:"var(--blue)"}}>Download JSON</span></button>
             <div style={{height:"0.5px",background:"var(--sep)"}}/>
             <button onClick={()=>fileInputRef.current?.click()} style={{width:"100%",display:"flex",alignItems:"center",justifyContent:"space-between",padding:"15px 16px",background:"transparent",color:"var(--t1)",fontSize:15,fontWeight:500,textAlign:"left"}}>Import backup<span style={{fontSize:13,color:"var(--blue)"}}>Choose JSON</span></button>
