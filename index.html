@@ -333,6 +333,7 @@ function PillForm({initial,accent,onSave,onCancel,submitLabel="Add",defaultSessi
   const [dosageAmt,setDosageAmt]=useState(initial?.dosageAmt||parsed.amt);
   const [dosageUnit,setDosageUnit]=useState(initial?.dosageUnit||parsed.unit||"mg");
   const [quantity,setQuantity]=useState(initial?.quantity||parsed.qty||1);
+  const [reason,setReason]=useState(initial?.reason||"");
   const [suggestions,setSuggestions]=useState([]);
   const [showSuggestions,setShowSuggestions]=useState(false);
   const [scanLoading,setScanLoading]=useState(false);
@@ -346,7 +347,7 @@ function PillForm({initial,accent,onSave,onCancel,submitLabel="Add",defaultSessi
     setScanLoading(true);
     try{
       const b64=await new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result.split(",")[1]);r.onerror=rej;r.readAsDataURL(file);});
-      const fetchRes=await fetch("https://fotzkqkghxndjnomrspr.supabase.co/functions/v1/nurse-chat",{method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZvdHprcWtnaHhuZGpub21yc3ByIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA4MTg0MTMsImV4cCI6MjA5NjM5NDQxM30.o8AyVFlhd_g0NbdB1hd28x8ERxmCO4OjXPuwVoCJano"},body:JSON.stringify({system:"",messages:[{role:"user",content:[{type:"image",source:{type:"base64",media_type:file.type,data:b64}},{type:"text",text:"This is a pharmacy label or medication packaging. It may be in French or English. Extract ALL dosing schedules and respond ONLY with a valid JSON array — never a single object, always an array. One array element per daily intake time. Fields per element: name (string), dosageAmt (number or null), dosageUnit (string or null), quantity (number, default 1), session (MUST be one of: morning/lunch/evening — map dejeuner/matin/morn to morning, diner/midi/lunch to lunch, coucher/soir/evening/bedtime to evening), timing (one of with_meal/before_meal/after_meal or null), durationDays (number or null — convert months to days: 3 mois = 90), ongoing (boolean). CRITICAL: if label says 2 times per day or 2 fois par jour, you MUST return exactly 2 objects in the array. If 3 times, return 3 objects. Never merge multiple intake times into one object."}]}]})});
+      const fetchRes=await fetch("https://fotzkqkghxndjnomrspr.supabase.co/functions/v1/nurse-chat",{method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZvdHprcWtnaHhuZGpub21yc3ByIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA4MTg0MTMsImV4cCI6MjA5NjM5NDQxM30.o8AyVFlhd_g0NbdB1hd28x8ERxmCO4OjXPuwVoCJano"},body:JSON.stringify({system:"",messages:[{role:"user",content:[{type:"image",source:{type:"base64",media_type:file.type,data:b64}},{type:"text",text:"This is a pharmacy label or medication packaging. It may be in French or English. Extract ALL dosing schedules and respond ONLY with a valid JSON array — never a single object, always an array. One array element per daily intake time. Fields per element: name (string), dosageAmt (number or null), dosageUnit (string or null), quantity (number, default 1), session (MUST be one of: morning/lunch/evening — map dejeuner/matin/morn to morning, diner/midi/lunch to lunch, coucher/soir/evening/bedtime to evening), timing (one of with_meal/before_meal/after_meal or null), durationDays (number or null — convert months to days: 3 mois = 90), ongoing (boolean). CRITICAL: if label says 2 times per day or 2 fois par jour, you MUST return exactly 2 objects in the array. If 3 times, return 3 objects. Never merge multiple intake times into one object. Also extract a reason field: a short phrase (max 5 words) describing what the medication is for, in the same language as the label (e.g. 'Pour les migraines', 'Pain relief'). If not mentioned on the label, omit the field."}]}]})});
       const data=await fetchRes.json();
       const text=data.content?.find(b=>b.type==="text")?.text||"";
       console.log("SCAN RAW TEXT:",text);
@@ -363,6 +364,7 @@ function PillForm({initial,accent,onSave,onCancel,submitLabel="Add",defaultSessi
         if(p.session)setSchedules([{session:p.session,timing:p.timing||""}]);
         if(p.durationDays){setDurationDays(Number(p.durationDays));setOngoing(false);}
         else if(p.ongoing)setOngoing(true);
+        if(p.reason)setReason(p.reason);
       } else {
         // Multiple intakes: save each as a separate pill entry
         for(const p of entries){
@@ -371,7 +373,7 @@ function PillForm({initial,accent,onSave,onCancel,submitLabel="Add",defaultSessi
           const sess=p.session||"morning";
           const scheduleEntry=[{session:sess,timing:p.timing||""}];
           const dur=p.durationDays?Number(p.durationDays):null;
-          onSave({name:p.name.trim(),dose,dosageAmt:p.dosageAmt,dosageUnit:p.dosageUnit,quantity:p.quantity||1,shape:"capsule",schedules:scheduleEntry,sessions:[sess],startDate:new Date().toISOString().slice(0,10),durationDays:dur,asNeeded:false,maxDailyDose:null,minIntervalHours:null});
+          onSave({name:p.name.trim(),dose,dosageAmt:p.dosageAmt,dosageUnit:p.dosageUnit,quantity:p.quantity||1,shape:"capsule",schedules:scheduleEntry,sessions:[sess],startDate:new Date().toISOString().slice(0,10),durationDays:dur,asNeeded:false,maxDailyDose:null,minIntervalHours:null,reason:p.reason||""});
         }
       }
     }catch(err){console.error("Scan error",err);alert("Scan failed — please fill in manually.");}
@@ -381,7 +383,7 @@ function PillForm({initial,accent,onSave,onCancel,submitLabel="Add",defaultSessi
     if(!name.trim())return;
     const dose=quantity+" x "+dosageAmt+dosageUnit;
     const sessions=asNeeded?["as_needed"]:schedules.map(s=>s.session);
-    onSave({name:name.trim(),dose,dosageAmt,dosageUnit,quantity,shape,schedules:asNeeded?[]:schedules,sessions,startDate,durationDays:ongoing?null:Number(durationDays),asNeeded,maxDailyDose:asNeeded?Number(maxDailyDose):null,minIntervalHours:asNeeded?Number(minIntervalHours):null});
+    onSave({name:name.trim(),dose,dosageAmt,dosageUnit,quantity,shape,schedules:asNeeded?[]:schedules,sessions,startDate,durationDays:ongoing?null:Number(durationDays),asNeeded,maxDailyDose:asNeeded?Number(maxDailyDose):null,minIntervalHours:asNeeded?Number(minIntervalHours):null,reason:reason.trim()});
   }
   const stepBtn=(onClick,label)=>(<button onClick={onClick} style={{width:28,height:28,borderRadius:8,background:"var(--acc-soft)",border:"none",color:"var(--acc)",fontSize:18,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",flexShrink:0}}>{label}</button>);
   return(
@@ -405,6 +407,11 @@ function PillForm({initial,accent,onSave,onCancel,submitLabel="Add",defaultSessi
             ))}
           </div>
         )}
+      </div>
+      <div style={{marginBottom:16}}>
+        <input placeholder="Raison (optionnel)" value={reason}
+          onChange={e=>setReason(e.target.value)}
+          style={{width:"100%",padding:"11px 14px",borderRadius:12,border:"none",background:"var(--card)",color:"var(--t1)",fontSize:15,display:"block",boxShadow:"0 1px 3px rgba(0,0,0,0.07)"}}/>
       </div>
       <div style={{marginBottom:16}}>
         <div style={{display:"flex",marginBottom:6}}>
@@ -957,7 +964,7 @@ function SettingsView({profile,setProfile,pillList,archived,setPillList,setArchi
           <div style={{background:"var(--card)",borderRadius:16,overflow:"hidden",boxShadow:"var(--shadow-sm)"}}>
             <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"13px 16px"}}><span style={{fontSize:15,color:"var(--t2)"}}>App</span><span style={{fontSize:15,color:"var(--t1)",fontWeight:500}}>Posology-dev</span></div>
             <div style={{height:"0.5px",background:"var(--sep)"}}/>
-            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"13px 16px"}}><span style={{fontSize:15,color:"var(--t2)"}}>Version</span><span style={{fontSize:15,color:"var(--t1)",fontWeight:500}}>pr-v165</span></div>
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"13px 16px"}}><span style={{fontSize:15,color:"var(--t2)"}}>Version</span><span style={{fontSize:15,color:"var(--t1)",fontWeight:500}}>pr-v166</span></div>
             <div style={{height:"0.5px",background:"var(--sep)"}}/>
             <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"13px 16px"}}><span style={{fontSize:15,color:"var(--t2)"}}>Storage</span><span style={{fontSize:15,color:"var(--t1)",fontWeight:500}}>Supabase</span></div>
           </div>
@@ -1353,9 +1360,10 @@ function App(){
                   if(pill.durationDays!=null&&pill.startDate){const endDate=addDays(pill.startDate,pill.durationDays);const today=todayStr();const[ey,em,ed]=endDate.split("-").map(Number);const[ty,tm,td]=today.split("-").map(Number);const daysLeft=Math.round((new Date(ey,em-1,ed)-new Date(ty,tm-1,td))/(1000*60*60*24));durationInfo=daysLeft<=3?daysLeft+" day"+(daysLeft!==1?"s":"")+" left":"Until "+formatShort(endDate);}
                   return(<div key={pill.id} className="pill-card pill-press" onClick={()=>setDetailSheet({pill,session:key,accent})}
                     style={{display:"flex",alignItems:"center",background:"var(--card)",borderRadius:18,overflow:"hidden",boxShadow:"var(--shadow-md)",cursor:"pointer",opacity:t?0.55:1,animationDelay:pills.indexOf(pill)*60+"ms"}}>
-                    <div style={{width:68,height:92,flexShrink:0,background:"rgba(212,85,0,0.07)",display:"flex",alignItems:"center",justifyContent:"center"}}><ShapeIcon shape={pill.shape} size={28} color="var(--acc)"/></div>
-                    <div style={{flex:1,minWidth:0,padding:"10px 14px"}}>
+                    <div style={{width:68,height:104,flexShrink:0,background:"rgba(212,85,0,0.07)",display:"flex",alignItems:"center",justifyContent:"center"}}><ShapeIcon shape={pill.shape} size={28} color="var(--acc)"/></div>
+                    <div style={{flex:1,minWidth:0,padding:"13px 16px"}}>
                       <div style={{fontSize:16,fontWeight:600,color:"var(--t1)",letterSpacing:"-0.01em",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{pill.name}</div>
+                      {pill.reason&&<div style={{fontSize:13,color:"var(--t2)",marginTop:2,fontStyle:"italic",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{pill.reason}</div>}
                       <div style={{fontSize:14,color:"var(--t2)",marginTop:2,fontWeight:400}}>{pill.dose}</div>
                       {(tl||durationInfo)&&(<div style={{fontSize:13,color:"var(--t3)",marginTop:3,fontWeight:500,display:"flex",gap:5}}>{tl&&<span>{tl}</span>}{tl&&durationInfo&&<span>·</span>}{durationInfo&&<span style={{color:durationInfo.includes("left")?"var(--acc)":"var(--t3)"}}>{durationInfo}</span>}</div>)}
                     </div>
@@ -1386,9 +1394,10 @@ function App(){
                 const nextLabel=(nextAllowedTs&&now<nextAllowedTs)?"Next at "+fmtTime(nextAllowedTs):null;
                 return(<div key={pill.id} className="pill-card pill-press" onClick={()=>setDetailSheet({pill,session:"as_needed",accent:"var(--acc)"})}
                   style={{display:"flex",alignItems:"center",background:"var(--card)",borderRadius:18,overflow:"hidden",boxShadow:"var(--shadow-md)",cursor:"pointer",animationDelay:(pillList.as_needed||[]).indexOf(pill)*60+"ms"}}>
-                  <div style={{width:68,height:92,flexShrink:0,background:"rgba(212,85,0,0.07)",display:"flex",alignItems:"center",justifyContent:"center"}}><ShapeIcon shape={pill.shape} size={28} color="var(--acc)"/></div>
-                  <div style={{flex:1,minWidth:0,padding:"10px 14px"}}>
+                  <div style={{width:68,height:104,flexShrink:0,background:"rgba(212,85,0,0.07)",display:"flex",alignItems:"center",justifyContent:"center"}}><ShapeIcon shape={pill.shape} size={28} color="var(--acc)"/></div>
+                  <div style={{flex:1,minWidth:0,padding:"13px 16px"}}>
                     <div style={{fontSize:16,fontWeight:600,color:"var(--t1)",letterSpacing:"-0.01em",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{pill.name}</div>
+                    {pill.reason&&<div style={{fontSize:13,color:"var(--t2)",marginTop:2,fontStyle:"italic",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{pill.reason}</div>}
                     <div style={{fontSize:14,color:"var(--t2)",marginTop:2,fontWeight:400}}>{pill.dose}</div>
                     {atMax&&<div style={{display:"inline-flex",alignItems:"center",gap:4,marginTop:4,background:"var(--acc-soft)",borderRadius:6,padding:"2px 8px"}}><svg width="11" height="11" viewBox="0 0 24 24" fill="none"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" fill="var(--acc)" stroke="var(--acc)" strokeWidth="1"/><line x1="12" y1="9" x2="12" y2="13" stroke="white" strokeWidth="2" strokeLinecap="round"/><line x1="12" y1="17" x2="12.01" y2="17" stroke="white" strokeWidth="2" strokeLinecap="round"/></svg><span style={{fontSize:12,fontWeight:700,color:"var(--acc)",letterSpacing:"0.03em"}}>Max {pill.maxDailyDose}x reached</span></div>}
                     {!atMax&&nextLabel&&<div style={{display:"inline-flex",alignItems:"center",marginTop:4,background:"rgba(0,102,232,0.10)",borderRadius:6,padding:"2px 8px"}}><span style={{fontSize:12,fontWeight:700,color:"var(--blue)",letterSpacing:"0.03em"}}>{nextLabel}</span></div>}
@@ -1473,6 +1482,7 @@ function App(){
         <div style={{width:52,height:52,borderRadius:14,flexShrink:0,background:"var(--sep)",display:"flex",alignItems:"center",justifyContent:"center"}}><ShapeIcon shape={detailSheet.pill.shape} size={28} color="var(--t2)"/></div>
         <div style={{flex:1,minWidth:0}}>
           <div style={{fontSize:20,fontWeight:700,color:"var(--t1)",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{detailSheet.pill.name}</div>
+          {detailSheet.pill.reason&&<div style={{fontSize:13,color:"var(--t2)",marginTop:1,fontStyle:"italic"}}>{detailSheet.pill.reason}</div>}
           <div style={{fontSize:14,color:"var(--t2)",marginTop:2}}>{detailSheet.pill.dose}</div>
         </div>
         <button onClick={()=>{deletePill(detailSheet.session,detailSheet.pill.id);setDetailSheet(null);}} style={{width:36,height:36,borderRadius:10,flexShrink:0,border:"none",cursor:"pointer",background:"rgba(255,59,48,0.10)",display:"flex",alignItems:"center",justifyContent:"center",color:"var(--red)"}}><IconTrash/></button>
@@ -1656,7 +1666,7 @@ ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
 </script>
 <script>
 if("serviceWorker"in navigator){
-  const sw='const C="pr-v165",A=[self.location.pathname];self.addEventListener("install",e=>{e.waitUntil(caches.open(C).then(c=>c.addAll(A)));self.skipWaiting();});self.addEventListener("activate",e=>{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==C).map(k=>caches.delete(k)))));self.clients.claim();});self.addEventListener("fetch",e=>{if(e.request.url.includes("supabase.co")){e.respondWith(fetch(e.request));return;}if(e.request.mode==="navigate"){e.respondWith(fetch(e.request).then(res=>{const cl=res.clone();caches.open(C).then(c=>c.put(e.request,cl));return res;}).catch(()=>caches.match(e.request).then(r=>r||caches.match(self.location.pathname))));return;}e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request).then(res=>{const cl=res.clone();caches.open(C).then(c=>c.put(e.request,cl));return res;})));});';
+  const sw='const C="pr-v166",A=[self.location.pathname];self.addEventListener("install",e=>{e.waitUntil(caches.open(C).then(c=>c.addAll(A)));self.skipWaiting();});self.addEventListener("activate",e=>{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==C).map(k=>caches.delete(k)))));self.clients.claim();});self.addEventListener("fetch",e=>{if(e.request.url.includes("supabase.co")){e.respondWith(fetch(e.request));return;}if(e.request.mode==="navigate"){e.respondWith(fetch(e.request).then(res=>{const cl=res.clone();caches.open(C).then(c=>c.put(e.request,cl));return res;}).catch(()=>caches.match(e.request).then(r=>r||caches.match(self.location.pathname))));return;}e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request).then(res=>{const cl=res.clone();caches.open(C).then(c=>c.put(e.request,cl));return res;})));});';
   navigator.serviceWorker.register(URL.createObjectURL(new Blob([sw],{type:"application/javascript"})),{scope:"./"}).catch(e=>console.warn(e));
 }
 </script>
