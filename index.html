@@ -964,7 +964,7 @@ function SettingsView({profile,setProfile,pillList,archived,setPillList,setArchi
           <div style={{background:"var(--card)",borderRadius:16,overflow:"hidden",boxShadow:"var(--shadow-sm)"}}>
             <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"13px 16px"}}><span style={{fontSize:15,color:"var(--t2)"}}>App</span><span style={{fontSize:15,color:"var(--t1)",fontWeight:500}}>Posology-dev</span></div>
             <div style={{height:"0.5px",background:"var(--sep)"}}/>
-            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"13px 16px"}}><span style={{fontSize:15,color:"var(--t2)"}}>Version</span><span style={{fontSize:15,color:"var(--t1)",fontWeight:500}}>pr-v166</span></div>
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"13px 16px"}}><span style={{fontSize:15,color:"var(--t2)"}}>Version</span><span style={{fontSize:15,color:"var(--t1)",fontWeight:500}}>pr-v167</span></div>
             <div style={{height:"0.5px",background:"var(--sep)"}}/>
             <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"13px 16px"}}><span style={{fontSize:15,color:"var(--t2)"}}>Storage</span><span style={{fontSize:15,color:"var(--t1)",fontWeight:500}}>Supabase</span></div>
           </div>
@@ -1360,7 +1360,7 @@ function App(){
                   if(pill.durationDays!=null&&pill.startDate){const endDate=addDays(pill.startDate,pill.durationDays);const today=todayStr();const[ey,em,ed]=endDate.split("-").map(Number);const[ty,tm,td]=today.split("-").map(Number);const daysLeft=Math.round((new Date(ey,em-1,ed)-new Date(ty,tm-1,td))/(1000*60*60*24));durationInfo=daysLeft<=3?daysLeft+" day"+(daysLeft!==1?"s":"")+" left":"Until "+formatShort(endDate);}
                   return(<div key={pill.id} className="pill-card pill-press" onClick={()=>setDetailSheet({pill,session:key,accent})}
                     style={{display:"flex",alignItems:"center",background:"var(--card)",borderRadius:18,overflow:"hidden",boxShadow:"var(--shadow-md)",cursor:"pointer",opacity:t?0.55:1,animationDelay:pills.indexOf(pill)*60+"ms"}}>
-                    <div style={{width:68,height:104,flexShrink:0,background:"rgba(212,85,0,0.07)",display:"flex",alignItems:"center",justifyContent:"center"}}><ShapeIcon shape={pill.shape} size={28} color="var(--acc)"/></div>
+                    <div style={{width:68,alignSelf:"stretch",flexShrink:0,background:"rgba(212,85,0,0.07)",display:"flex",alignItems:"center",justifyContent:"center"}}><ShapeIcon shape={pill.shape} size={28} color="var(--acc)"/></div>
                     <div style={{flex:1,minWidth:0,padding:"13px 16px"}}>
                       <div style={{fontSize:16,fontWeight:600,color:"var(--t1)",letterSpacing:"-0.01em",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{pill.name}</div>
                       {pill.reason&&<div style={{fontSize:13,color:"var(--t2)",marginTop:2,fontStyle:"italic",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{pill.reason}</div>}
@@ -1394,7 +1394,7 @@ function App(){
                 const nextLabel=(nextAllowedTs&&now<nextAllowedTs)?"Next at "+fmtTime(nextAllowedTs):null;
                 return(<div key={pill.id} className="pill-card pill-press" onClick={()=>setDetailSheet({pill,session:"as_needed",accent:"var(--acc)"})}
                   style={{display:"flex",alignItems:"center",background:"var(--card)",borderRadius:18,overflow:"hidden",boxShadow:"var(--shadow-md)",cursor:"pointer",animationDelay:(pillList.as_needed||[]).indexOf(pill)*60+"ms"}}>
-                  <div style={{width:68,height:104,flexShrink:0,background:"rgba(212,85,0,0.07)",display:"flex",alignItems:"center",justifyContent:"center"}}><ShapeIcon shape={pill.shape} size={28} color="var(--acc)"/></div>
+                  <div style={{width:68,alignSelf:"stretch",flexShrink:0,background:"rgba(212,85,0,0.07)",display:"flex",alignItems:"center",justifyContent:"center"}}><ShapeIcon shape={pill.shape} size={28} color="var(--acc)"/></div>
                   <div style={{flex:1,minWidth:0,padding:"13px 16px"}}>
                     <div style={{fontSize:16,fontWeight:600,color:"var(--t1)",letterSpacing:"-0.01em",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{pill.name}</div>
                     {pill.reason&&<div style={{fontSize:13,color:"var(--t2)",marginTop:2,fontStyle:"italic",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{pill.reason}</div>}
@@ -1666,7 +1666,7 @@ ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
 </script>
 <script>
 if("serviceWorker"in navigator){
-  const sw='const C="pr-v166",A=[self.location.pathname];self.addEventListener("install",e=>{e.waitUntil(caches.open(C).then(c=>c.addAll(A)));self.skipWaiting();});self.addEventListener("activate",e=>{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==C).map(k=>caches.delete(k)))));self.clients.claim();});self.addEventListener("fetch",e=>{if(e.request.url.includes("supabase.co")){e.respondWith(fetch(e.request));return;}if(e.request.mode==="navigate"){e.respondWith(fetch(e.request).then(res=>{const cl=res.clone();caches.open(C).then(c=>c.put(e.request,cl));return res;}).catch(()=>caches.match(e.request).then(r=>r||caches.match(self.location.pathname))));return;}e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request).then(res=>{const cl=res.clone();caches.open(C).then(c=>c.put(e.request,cl));return res;})));});';
+  const sw='const C="pr-v167",A=[self.location.pathname];self.addEventListener("install",e=>{e.waitUntil(caches.open(C).then(c=>c.addAll(A)));self.skipWaiting();});self.addEventListener("activate",e=>{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==C).map(k=>caches.delete(k)))));self.clients.claim();});self.addEventListener("fetch",e=>{if(e.request.url.includes("supabase.co")){e.respondWith(fetch(e.request));return;}if(e.request.mode==="navigate"){e.respondWith(fetch(e.request).then(res=>{const cl=res.clone();caches.open(C).then(c=>c.put(e.request,cl));return res;}).catch(()=>caches.match(e.request).then(r=>r||caches.match(self.location.pathname))));return;}e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request).then(res=>{const cl=res.clone();caches.open(C).then(c=>c.put(e.request,cl));return res;})));});';
   navigator.serviceWorker.register(URL.createObjectURL(new Blob([sw],{type:"application/javascript"})),{scope:"./"}).catch(e=>console.warn(e));
 }
 </script>
