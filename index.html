@@ -1008,8 +1008,8 @@ function SettingsView({profile,setProfile,medicalContext,setMedicalContext,pillL
             ].map(({field,label,placeholder,maxLen},i)=>(
               <div key={field} style={{position:"relative"}}>
                 {i>0&&<div style={{position:"absolute",top:0,left:16,right:0,height:"0.5px",background:"var(--sep)"}}/>}
-                <div style={{padding:"13px 16px"}}>
-                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",marginBottom:6}}>
+                <div style={{padding:"10px 16px"}}>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",marginBottom:4}}>
                     <span style={{fontSize:15,color:"var(--t2)",fontWeight:500}}>{label}</span>
                     <span style={{fontSize:12,color:"var(--t3)"}}>{(medicalContext[field]||"").length}/{maxLen}</span>
                   </div>
@@ -1017,9 +1017,10 @@ function SettingsView({profile,setProfile,medicalContext,setMedicalContext,pillL
                     value={medicalContext[field]||""}
                     placeholder={placeholder}
                     maxLength={maxLen}
-                    rows={2}
-                    onChange={e=>{const v=e.target.value;const mc={...medicalContext,[field]:v};setMedicalContext(mc);sbSet("pr:medical-context",mc);}}
-                    style={{width:"100%",border:"none",background:"transparent",color:"var(--t1)",fontSize:15,resize:"none",outline:"none",lineHeight:1.5,WebkitAppearance:"none",boxSizing:"border-box",padding:0,fontFamily:"inherit"}}
+                    rows={1}
+                    onChange={e=>{const v=e.target.value;const mc={...medicalContext,[field]:v};setMedicalContext(mc);sbSet("pr:medical-context",mc);e.target.style.height="auto";e.target.style.height=e.target.scrollHeight+"px";}}
+                    onFocus={e=>{e.target.style.height="auto";e.target.style.height=e.target.scrollHeight+"px";}}
+                    style={{width:"100%",border:"none",background:"transparent",color:"var(--t1)",fontSize:16,resize:"none",outline:"none",lineHeight:1.5,WebkitAppearance:"none",boxSizing:"border-box",padding:0,fontFamily:"inherit",overflow:"hidden"}}
                   />
                 </div>
               </div>
@@ -1065,7 +1066,7 @@ function SettingsView({profile,setProfile,medicalContext,setMedicalContext,pillL
           <div style={{background:"var(--card)",borderRadius:16,overflow:"hidden",boxShadow:"var(--shadow-sm)"}}>
             <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"13px 16px"}}><span style={{fontSize:15,color:"var(--t2)"}}>App</span><span style={{fontSize:15,color:"var(--t1)",fontWeight:500}}>Posology-dev</span></div>
             <div style={{height:"0.5px",background:"var(--sep)"}}/>
-            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"13px 16px"}}><span style={{fontSize:15,color:"var(--t2)"}}>Version</span><span style={{fontSize:15,color:"var(--t1)",fontWeight:500}}>pr-v176</span></div>
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"13px 16px"}}><span style={{fontSize:15,color:"var(--t2)"}}>Version</span><span style={{fontSize:15,color:"var(--t1)",fontWeight:500}}>pr-v177</span></div>
             <div style={{height:"0.5px",background:"var(--sep)"}}/>
             <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"13px 16px"}}><span style={{fontSize:15,color:"var(--t2)"}}>Storage</span><span style={{fontSize:15,color:"var(--t1)",fontWeight:500}}>Supabase</span></div>
           </div>
@@ -1769,7 +1770,7 @@ ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
 </script>
 <script>
 if("serviceWorker"in navigator){
-  const sw='const C="pr-v176",A=[self.location.pathname];self.addEventListener("install",e=>{e.waitUntil(caches.open(C).then(c=>c.addAll(A)));self.skipWaiting();});self.addEventListener("activate",e=>{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==C).map(k=>caches.delete(k)))));self.clients.claim();});self.addEventListener("fetch",e=>{if(e.request.url.includes("supabase.co")){e.respondWith(fetch(e.request));return;}if(e.request.mode==="navigate"){e.respondWith(fetch(e.request).then(res=>{const cl=res.clone();caches.open(C).then(c=>c.put(e.request,cl));return res;}).catch(()=>caches.match(e.request).then(r=>r||caches.match(self.location.pathname))));return;}e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request).then(res=>{const cl=res.clone();caches.open(C).then(c=>c.put(e.request,cl));return res;})));});';
+  const sw='const C="pr-v177",A=[self.location.pathname];self.addEventListener("install",e=>{e.waitUntil(caches.open(C).then(c=>c.addAll(A)));self.skipWaiting();});self.addEventListener("activate",e=>{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==C).map(k=>caches.delete(k)))));self.clients.claim();});self.addEventListener("fetch",e=>{if(e.request.url.includes("supabase.co")){e.respondWith(fetch(e.request));return;}if(e.request.mode==="navigate"){e.respondWith(fetch(e.request).then(res=>{const cl=res.clone();caches.open(C).then(c=>c.put(e.request,cl));return res;}).catch(()=>caches.match(e.request).then(r=>r||caches.match(self.location.pathname))));return;}e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request).then(res=>{const cl=res.clone();caches.open(C).then(c=>c.put(e.request,cl));return res;})));});';
   navigator.serviceWorker.register(URL.createObjectURL(new Blob([sw],{type:"application/javascript"})),{scope:"./"}).catch(e=>console.warn(e));
 }
 </script>
