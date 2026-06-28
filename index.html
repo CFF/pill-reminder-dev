@@ -979,6 +979,7 @@ function HistoryView({view,setView,selectedDay,setSelectedDay,history,setHistory
 }
 
 function SettingsView({profile,setProfile,medicalContext,setMedicalContext,pillList,archived,setPillList,setArchived,fileInputRef}){
+  const [mcOpen,setMcOpen]=React.useState(false);
   return(<div style={{minHeight:"100vh",background:"var(--bg)",paddingBottom:"calc(90px + env(safe-area-inset-bottom,0px))"}} className="fade-up scroll-view">
     <div style={{maxWidth:480,margin:"0 auto"}}>
       <div style={{background:"var(--card)",borderRadius:"0 0 24px 24px",boxShadow:"var(--shadow-md)",marginBottom:6,paddingTop:"calc(env(safe-area-inset-top,20px) + 20px)",paddingBottom:18,paddingLeft:20,paddingRight:20}}>
@@ -1001,7 +1002,7 @@ function SettingsView({profile,setProfile,medicalContext,setMedicalContext,pillL
         <div style={{marginBottom:28}}>
           <div style={{fontSize:12,fontWeight:600,color:"var(--t3)",textTransform:"uppercase",letterSpacing:"0.07em",marginBottom:10}}>Contexte médical</div>
           {(()=>{const mcFilled=Object.values(medicalContext).some(v=>v&&v.trim().length>0);
-          return mcFilled?(
+          return (mcFilled||mcOpen)?(
             <div style={{background:"var(--card)",borderRadius:16,overflow:"hidden",boxShadow:"var(--shadow-sm)"}}>
               {[
                 {field:"conditions",label:"Conditions chroniques",placeholder:"Ex. : diabète de type 2, hypothyroïdie…",maxLen:300},
@@ -1036,7 +1037,7 @@ function SettingsView({profile,setProfile,medicalContext,setMedicalContext,pillL
               </div>
               <div style={{fontSize:16,fontWeight:600,color:"var(--t1)",textAlign:"center",marginBottom:6,lineHeight:1.3}}>Aidez le Nurse à mieux vous connaître</div>
               <div style={{fontSize:14,color:"var(--t2)",textAlign:"center",lineHeight:1.5,maxWidth:260,marginBottom:22}}>Ces informations permettent au Nurse de répondre avec plus de précision.</div>
-              <button onClick={()=>{const mc={...medicalContext,conditions:medicalContext.conditions||" "};setMedicalContext(mc);sbSet("pr:medical-context",mc);}} style={{background:"var(--acc)",color:"#fff",fontFamily:"inherit",fontSize:15,fontWeight:600,border:"none",borderRadius:12,padding:"13px 28px",cursor:"pointer",minHeight:44,width:"100%"}}>Commencer</button>
+              <button onClick={()=>setMcOpen(true)} style={{background:"var(--acc)",color:"#fff",fontFamily:"inherit",fontSize:15,fontWeight:600,border:"none",borderRadius:12,padding:"13px 28px",cursor:"pointer",minHeight:44,width:"100%"}}>Commencer</button>
             </div>
           );})()}
         </div>
@@ -1079,7 +1080,7 @@ function SettingsView({profile,setProfile,medicalContext,setMedicalContext,pillL
           <div style={{background:"var(--card)",borderRadius:16,overflow:"hidden",boxShadow:"var(--shadow-sm)"}}>
             <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"13px 16px"}}><span style={{fontSize:15,color:"var(--t2)"}}>App</span><span style={{fontSize:15,color:"var(--t1)",fontWeight:500}}>Posology-dev</span></div>
             <div style={{height:"0.5px",background:"var(--sep)"}}/>
-            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"13px 16px"}}><span style={{fontSize:15,color:"var(--t2)"}}>Version</span><span style={{fontSize:15,color:"var(--t1)",fontWeight:500}}>pr-v181</span></div>
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"13px 16px"}}><span style={{fontSize:15,color:"var(--t2)"}}>Version</span><span style={{fontSize:15,color:"var(--t1)",fontWeight:500}}>pr-v182</span></div>
             <div style={{height:"0.5px",background:"var(--sep)"}}/>
             <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"13px 16px"}}><span style={{fontSize:15,color:"var(--t2)"}}>Storage</span><span style={{fontSize:15,color:"var(--t1)",fontWeight:500}}>Supabase</span></div>
           </div>
@@ -1783,7 +1784,7 @@ ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
 </script>
 <script>
 if("serviceWorker"in navigator){
-  const sw='const C="pr-v181",A=[self.location.pathname];self.addEventListener("install",e=>{e.waitUntil(caches.open(C).then(c=>c.addAll(A)));self.skipWaiting();});self.addEventListener("activate",e=>{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==C).map(k=>caches.delete(k)))));self.clients.claim();});self.addEventListener("fetch",e=>{if(e.request.url.includes("supabase.co")){e.respondWith(fetch(e.request));return;}if(e.request.mode==="navigate"){e.respondWith(fetch(e.request).then(res=>{const cl=res.clone();caches.open(C).then(c=>c.put(e.request,cl));return res;}).catch(()=>caches.match(e.request).then(r=>r||caches.match(self.location.pathname))));return;}e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request).then(res=>{const cl=res.clone();caches.open(C).then(c=>c.put(e.request,cl));return res;})));});';
+  const sw='const C="pr-v182",A=[self.location.pathname];self.addEventListener("install",e=>{e.waitUntil(caches.open(C).then(c=>c.addAll(A)));self.skipWaiting();});self.addEventListener("activate",e=>{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==C).map(k=>caches.delete(k)))));self.clients.claim();});self.addEventListener("fetch",e=>{if(e.request.url.includes("supabase.co")){e.respondWith(fetch(e.request));return;}if(e.request.mode==="navigate"){e.respondWith(fetch(e.request).then(res=>{const cl=res.clone();caches.open(C).then(c=>c.put(e.request,cl));return res;}).catch(()=>caches.match(e.request).then(r=>r||caches.match(self.location.pathname))));return;}e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request).then(res=>{const cl=res.clone();caches.open(C).then(c=>c.put(e.request,cl));return res;})));});';
   navigator.serviceWorker.register(URL.createObjectURL(new Blob([sw],{type:"application/javascript"})),{scope:"./"}).catch(e=>console.warn(e));
 }
 </script>
