@@ -592,12 +592,13 @@ function asNeededStatus(timestamps,pill){
 const _k1="sk-ant-",_k2="api03-SEHKMjVQKiarWduKxDvAWxqAHLNXUzD4hOUM8919Rcd7vfz5VPaqApJ4e5_naxddNBAFKxmt23Aff3UU-84Fdw-6amcPAAA";
 const HEALTH_ASSISTANT_API_KEY=_k1+_k2;
 
-function HealthAssistant({pillList,profile,onClose,msgs,setMsgs}){
+function HealthAssistant({pillList,profile,medicalContext,setView,onClose,msgs,setMsgs}){
   const [input,setInput]=React.useState("");
   const [loading,setLoading]=React.useState(false);
   const [err,setErr]=React.useState(null);
   const [showDown,setShowDown]=React.useState(false);
   const [kb,setKb]=React.useState(0);
+  const [contextOpen,setContextOpen]=React.useState(false);
   const bottomRef=React.useRef(null);
   const inputRef=React.useRef(null);
   const didScroll=React.useRef(false);
@@ -656,9 +657,35 @@ function HealthAssistant({pillList,profile,onClose,msgs,setMsgs}){
       <div style={{background:"var(--card)",borderRadius:"0 0 24px 24px",boxShadow:"var(--shadow-md)",marginBottom:6,paddingTop:"calc(env(safe-area-inset-top,20px) + 20px)",paddingBottom:18,paddingLeft:20,paddingRight:20,backgroundImage:"radial-gradient(ellipse at 110% -10%, var(--acc-glow) 0%, transparent 60%)"}}>
         <h1 className="serif" style={{fontSize:34,fontWeight:400,color:"var(--t1)",letterSpacing:"-0.01em",lineHeight:1.1,margin:0}}>Health Assistant</h1>
       </div>
-      {allPills.length>0&&(
-        <div style={{padding:"12px 22px 0",fontSize:12.5,color:"var(--t2)",lineHeight:1.4}}>Aware of your treatment: <span style={{color:"var(--t1)",fontWeight:600}}>{pillSummary}</span></div>
-      )}
+      {(()=>{
+        const mc=medicalContext||{};
+        const filledFields=[mc.conditions,mc.allergies,mc.history,mc.notes].filter(Boolean);
+        const pillsWithReason=(allPills||[]).filter(p=>p.reason);
+        const totalCount=filledFields.length+pillsWithReason.length;
+        if(totalCount===0)return null;
+        const summaryLabel=totalCount===1?"1 élément renseigné":totalCount+" éléments renseignés";
+        return(
+          <div style={{margin:"10px 16px 0",background:"var(--card)",borderRadius:14,boxShadow:"var(--shadow-sm)",overflow:"hidden"}}>
+            <button onClick={()=>setContextOpen(o=>!o)} style={{width:"100%",display:"flex",alignItems:"center",justifyContent:"space-between",padding:"11px 14px",background:"transparent",border:"none",cursor:"pointer",textAlign:"left"}}>
+              <span style={{fontSize:13,fontWeight:600,color:"var(--t2)"}}>Contexte médical</span>
+              <div style={{display:"flex",alignItems:"center",gap:8}}>
+                <span style={{fontSize:12,color:"var(--t3)"}}>{summaryLabel}</span>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--t3)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{transform:contextOpen?"rotate(180deg)":"rotate(0deg)",transition:"transform 0.2s"}}><polyline points="6 9 12 15 18 9"/></svg>
+              </div>
+            </button>
+            {contextOpen&&(
+              <div style={{padding:"0 14px 12px",borderTop:"0.5px solid var(--sep)"}}>
+                {mc.conditions&&<div style={{marginTop:10}}><span style={{fontSize:11,fontWeight:600,color:"var(--t3)",textTransform:"uppercase",letterSpacing:"0.06em"}}>Conditions</span><p style={{margin:"3px 0 0",fontSize:13.5,color:"var(--t1)",lineHeight:1.5}}>{mc.conditions}</p></div>}
+                {mc.allergies&&<div style={{marginTop:10}}><span style={{fontSize:11,fontWeight:600,color:"var(--t3)",textTransform:"uppercase",letterSpacing:"0.06em"}}>Allergies</span><p style={{margin:"3px 0 0",fontSize:13.5,color:"var(--t1)",lineHeight:1.5}}>{mc.allergies}</p></div>}
+                {mc.history&&<div style={{marginTop:10}}><span style={{fontSize:11,fontWeight:600,color:"var(--t3)",textTransform:"uppercase",letterSpacing:"0.06em"}}>Antécédents</span><p style={{margin:"3px 0 0",fontSize:13.5,color:"var(--t1)",lineHeight:1.5}}>{mc.history}</p></div>}
+                {mc.notes&&<div style={{marginTop:10}}><span style={{fontSize:11,fontWeight:600,color:"var(--t3)",textTransform:"uppercase",letterSpacing:"0.06em"}}>Notes</span><p style={{margin:"3px 0 0",fontSize:13.5,color:"var(--t1)",lineHeight:1.5}}>{mc.notes}</p></div>}
+                {pillsWithReason.length>0&&<div style={{marginTop:10}}><span style={{fontSize:11,fontWeight:600,color:"var(--t3)",textTransform:"uppercase",letterSpacing:"0.06em"}}>Médicaments</span>{pillsWithReason.map(p=><p key={p.id} style={{margin:"3px 0 0",fontSize:13.5,color:"var(--t1)",lineHeight:1.5}}>{p.name}{p.dose?" "+p.dose:""} — {p.reason}</p>)}</div>}
+                <button onClick={()=>setView("settings")} style={{marginTop:12,background:"none",border:"none",padding:0,fontSize:12.5,color:"var(--acc)",cursor:"pointer",fontWeight:500}}>Modifier dans Settings</button>
+              </div>
+            )}
+          </div>
+        );
+      })()}
 
       {msgs.length===0&&!loading&&!err?(
         <div style={{display:"flex",flexDirection:"column",alignItems:"center",textAlign:"center",padding:"52px 32px 40px"}}>
@@ -993,7 +1020,7 @@ function SettingsView({profile,setProfile,medicalContext,setMedicalContext,pillL
           <div style={{background:"var(--card)",borderRadius:16,overflow:"hidden",boxShadow:"var(--shadow-sm)"}}>
             <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"13px 16px"}}><span style={{fontSize:15,color:"var(--t2)"}}>App</span><span style={{fontSize:15,color:"var(--t1)",fontWeight:500}}>Posology-dev</span></div>
             <div style={{height:"0.5px",background:"var(--sep)"}}/>
-            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"13px 16px"}}><span style={{fontSize:15,color:"var(--t2)"}}>Version</span><span style={{fontSize:15,color:"var(--t1)",fontWeight:500}}>pr-v171</span></div>
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"13px 16px"}}><span style={{fontSize:15,color:"var(--t2)"}}>Version</span><span style={{fontSize:15,color:"var(--t1)",fontWeight:500}}>pr-v172</span></div>
             <div style={{height:"0.5px",background:"var(--sep)"}}/>
             <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"13px 16px"}}><span style={{fontSize:15,color:"var(--t2)"}}>Storage</span><span style={{fontSize:15,color:"var(--t1)",fontWeight:500}}>Supabase</span></div>
           </div>
@@ -1697,7 +1724,7 @@ ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
 </script>
 <script>
 if("serviceWorker"in navigator){
-  const sw='const C="pr-v171",A=[self.location.pathname];self.addEventListener("install",e=>{e.waitUntil(caches.open(C).then(c=>c.addAll(A)));self.skipWaiting();});self.addEventListener("activate",e=>{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==C).map(k=>caches.delete(k)))));self.clients.claim();});self.addEventListener("fetch",e=>{if(e.request.url.includes("supabase.co")){e.respondWith(fetch(e.request));return;}if(e.request.mode==="navigate"){e.respondWith(fetch(e.request).then(res=>{const cl=res.clone();caches.open(C).then(c=>c.put(e.request,cl));return res;}).catch(()=>caches.match(e.request).then(r=>r||caches.match(self.location.pathname))));return;}e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request).then(res=>{const cl=res.clone();caches.open(C).then(c=>c.put(e.request,cl));return res;})));});';
+  const sw='const C="pr-v172",A=[self.location.pathname];self.addEventListener("install",e=>{e.waitUntil(caches.open(C).then(c=>c.addAll(A)));self.skipWaiting();});self.addEventListener("activate",e=>{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==C).map(k=>caches.delete(k)))));self.clients.claim();});self.addEventListener("fetch",e=>{if(e.request.url.includes("supabase.co")){e.respondWith(fetch(e.request));return;}if(e.request.mode==="navigate"){e.respondWith(fetch(e.request).then(res=>{const cl=res.clone();caches.open(C).then(c=>c.put(e.request,cl));return res;}).catch(()=>caches.match(e.request).then(r=>r||caches.match(self.location.pathname))));return;}e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request).then(res=>{const cl=res.clone();caches.open(C).then(c=>c.put(e.request,cl));return res;})));});';
   navigator.serviceWorker.register(URL.createObjectURL(new Blob([sw],{type:"application/javascript"})),{scope:"./"}).catch(e=>console.warn(e));
 }
 </script>
