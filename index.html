@@ -619,7 +619,48 @@ function HealthAssistant({pillList,profile,medicalContext,setView,onClose,msgs,s
   const pillSummary=allPills.length>0?allPills.map(p=>p.name+(p.dose?" "+p.dose:"")+(p.asNeeded?" (as needed)":"")).join(", "):"No medications listed";
   const profileSummary=[profile?.age?"Age: "+profile.age:"",profile?.weight?"Weight: "+profile.weight:"",profile?.height?"Height: "+profile.height:""].filter(Boolean).join(", ")||"No profile info";
 
-  const systemPrompt=`You are a warm, knowledgeable health companion for someone managing their daily treatment — like a trusted, experienced nurse who respects the person's time.\n\nTheir current medications: ${pillSummary}\nTheir profile: ${profileSummary}\n\nHow to answer:\n- Be brief: usually 2 to 4 sentences. Lead with the direct answer, with no preamble and no restating the question.\n- Be specific to THEIR treatment. Name their actual medications and tie what you say to their situation. Avoid generic health filler that could apply to anyone.\n- Use plain, warm language. Use **bold** sparingly to highlight one key term or action.\n- Only suggest consulting their doctor when it genuinely matters, not as a reflex on every reply.\n\nBoundaries:\n- Inform and explain, but never diagnose or give a personal medical recommendation.\n- Never tell them to start, stop, or change a treatment.\n- If something is outside your scope or you are unsure, say so briefly and kindly.\n\nAlways answer in the language the user writes in.`;
+  const buildSystemPrompt=()=>{
+    const mc=medicalContext||{};
+    const lines=[];
+    lines.push("You are a warm, knowledgeable health companion for someone managing their daily treatment — like a trusted, experienced nurse who respects the person's time.");
+    lines.push("");
+    lines.push("CONFIDENTIALITY: The data below was provided by the user to improve your responses. Do not repeat it back unless directly relevant. Do not mention it unprompted.");
+    // Profile
+    const profileLines=[];
+    if(profile?.name)profileLines.push("Name: "+profile.name);
+    if(profile?.age)profileLines.push("Age: "+profile.age);
+    if(profile?.weight)profileLines.push("Weight: "+profile.weight+" kg");
+    if(profile?.height)profileLines.push("Height: "+profile.height+" cm");
+    if(profileLines.length>0){lines.push("");lines.push("USER PROFILE:");profileLines.forEach(l=>lines.push(l));}
+    // Medical context
+    const mcLines=[];
+    if(mc.conditions)mcLines.push("Chronic conditions: "+mc.conditions);
+    if(mc.allergies)mcLines.push("Allergies and intolerances: "+mc.allergies);
+    if(mc.history)mcLines.push("Important history: "+mc.history);
+    if(mc.notes)mcLines.push("Notes: "+mc.notes);
+    if(mcLines.length>0){lines.push("");lines.push("MEDICAL CONTEXT:");mcLines.forEach(l=>lines.push(l));}
+    // Active treatment
+    const treatmentLines=[];
+    ["morning","lunch","evening"].forEach(sess=>{(pillList[sess]||[]).forEach(p=>{let entry=p.name+(p.dose?" "+p.dose:"")+" ("+sess+")";if(p.reason)entry+=" — "+p.reason;treatmentLines.push("- "+entry);});});
+    (pillList.as_needed||[]).forEach(p=>{let entry=p.name+(p.dose?" "+p.dose:"")+" (as needed)";if(p.reason)entry+=" — "+p.reason;treatmentLines.push("- "+entry);});
+    if(treatmentLines.length>0){lines.push("");lines.push("ACTIVE TREATMENT:");treatmentLines.forEach(l=>lines.push(l));}else{lines.push("");lines.push("ACTIVE TREATMENT: None listed.");}
+    // Instructions
+    lines.push("");
+    lines.push("How to answer:");
+    lines.push("- Be brief: usually 2 to 4 sentences. Lead with the direct answer, with no preamble and no restating the question.");
+    lines.push("- Be specific to THEIR treatment. Name their actual medications and tie what you say to their situation. Avoid generic health filler that could apply to anyone.");
+    lines.push("- Use plain, warm language. Use **bold** sparingly to highlight one key term or action.");
+    lines.push("- Only suggest consulting their doctor when it genuinely matters, not as a reflex on every reply.");
+    lines.push("");
+    lines.push("Boundaries:");
+    lines.push("- Inform and explain, but never diagnose or give a personal medical recommendation.");
+    lines.push("- Never tell them to start, stop, or change a treatment.");
+    lines.push("- If something is outside your scope or you are unsure, say so briefly and kindly.");
+    lines.push("");
+    lines.push("Always answer in the language the user writes in.");
+    return lines.join("\n");
+  };
+  const systemPrompt=buildSystemPrompt();
 
   React.useEffect(()=>{if(!didScroll.current){didScroll.current=true;return;}bottomRef.current?.scrollIntoView({behavior:"smooth"});},[msgs,loading,err]);
   React.useEffect(()=>{const el=bottomRef.current;if(!el){setShowDown(false);return;}const io=new IntersectionObserver(function(entries){setShowDown(msgs.length>0&&!entries[0].isIntersecting);},{rootMargin:"0px 0px -150px 0px",threshold:0});io.observe(el);return ()=>io.disconnect();},[msgs.length,loading,err]);
@@ -1024,7 +1065,7 @@ function SettingsView({profile,setProfile,medicalContext,setMedicalContext,pillL
           <div style={{background:"var(--card)",borderRadius:16,overflow:"hidden",boxShadow:"var(--shadow-sm)"}}>
             <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"13px 16px"}}><span style={{fontSize:15,color:"var(--t2)"}}>App</span><span style={{fontSize:15,color:"var(--t1)",fontWeight:500}}>Posology-dev</span></div>
             <div style={{height:"0.5px",background:"var(--sep)"}}/>
-            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"13px 16px"}}><span style={{fontSize:15,color:"var(--t2)"}}>Version</span><span style={{fontSize:15,color:"var(--t1)",fontWeight:500}}>pr-v174</span></div>
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"13px 16px"}}><span style={{fontSize:15,color:"var(--t2)"}}>Version</span><span style={{fontSize:15,color:"var(--t1)",fontWeight:500}}>pr-v175</span></div>
             <div style={{height:"0.5px",background:"var(--sep)"}}/>
             <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"13px 16px"}}><span style={{fontSize:15,color:"var(--t2)"}}>Storage</span><span style={{fontSize:15,color:"var(--t1)",fontWeight:500}}>Supabase</span></div>
           </div>
@@ -1728,7 +1769,7 @@ ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
 </script>
 <script>
 if("serviceWorker"in navigator){
-  const sw='const C="pr-v174",A=[self.location.pathname];self.addEventListener("install",e=>{e.waitUntil(caches.open(C).then(c=>c.addAll(A)));self.skipWaiting();});self.addEventListener("activate",e=>{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==C).map(k=>caches.delete(k)))));self.clients.claim();});self.addEventListener("fetch",e=>{if(e.request.url.includes("supabase.co")){e.respondWith(fetch(e.request));return;}if(e.request.mode==="navigate"){e.respondWith(fetch(e.request).then(res=>{const cl=res.clone();caches.open(C).then(c=>c.put(e.request,cl));return res;}).catch(()=>caches.match(e.request).then(r=>r||caches.match(self.location.pathname))));return;}e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request).then(res=>{const cl=res.clone();caches.open(C).then(c=>c.put(e.request,cl));return res;})));});';
+  const sw='const C="pr-v175",A=[self.location.pathname];self.addEventListener("install",e=>{e.waitUntil(caches.open(C).then(c=>c.addAll(A)));self.skipWaiting();});self.addEventListener("activate",e=>{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==C).map(k=>caches.delete(k)))));self.clients.claim();});self.addEventListener("fetch",e=>{if(e.request.url.includes("supabase.co")){e.respondWith(fetch(e.request));return;}if(e.request.mode==="navigate"){e.respondWith(fetch(e.request).then(res=>{const cl=res.clone();caches.open(C).then(c=>c.put(e.request,cl));return res;}).catch(()=>caches.match(e.request).then(r=>r||caches.match(self.location.pathname))));return;}e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request).then(res=>{const cl=res.clone();caches.open(C).then(c=>c.put(e.request,cl));return res;})));});';
   navigator.serviceWorker.register(URL.createObjectURL(new Blob([sw],{type:"application/javascript"})),{scope:"./"}).catch(e=>console.warn(e));
 }
 </script>
