@@ -684,7 +684,7 @@ function HealthAssistant({pillList,profile,medicalContext,setView,onClose,msgs,s
                 {mc.history&&<div style={{marginTop:10}}><span style={{fontSize:11,fontWeight:600,color:"var(--t3)",textTransform:"uppercase",letterSpacing:"0.06em"}}>Antécédents</span><p style={{margin:"3px 0 0",fontSize:13.5,color:"var(--t1)",lineHeight:1.5}}>{mc.history}</p></div>}
                 {mc.notes&&<div style={{marginTop:10}}><span style={{fontSize:11,fontWeight:600,color:"var(--t3)",textTransform:"uppercase",letterSpacing:"0.06em"}}>Notes</span><p style={{margin:"3px 0 0",fontSize:13.5,color:"var(--t1)",lineHeight:1.5}}>{mc.notes}</p></div>}
                 {pillsWithReason.length>0&&<div style={{marginTop:10}}><span style={{fontSize:11,fontWeight:600,color:"var(--t3)",textTransform:"uppercase",letterSpacing:"0.06em"}}>Médicaments</span>{pillsWithReason.map(p=><p key={p.id} style={{margin:"3px 0 0",fontSize:13.5,color:"var(--t1)",lineHeight:1.5}}>{p.name}{p.dose?" "+p.dose:""} — {p.reason}</p>)}</div>}
-                <button onClick={()=>setView("settings")} style={{marginTop:12,background:"none",border:"none",padding:0,fontSize:12.5,color:"var(--acc)",cursor:"pointer",fontWeight:500}}>Modifier dans Settings</button>
+                <button onClick={()=>setView("settings")} style={{marginTop:12,background:"none",border:"none",padding:0,fontSize:12.5,color:"var(--acc)",cursor:"pointer",fontWeight:500}}>Modifier</button>
               </div>
             )}
           </div>
@@ -1024,7 +1024,7 @@ function SettingsView({profile,setProfile,medicalContext,setMedicalContext,pillL
           <div style={{background:"var(--card)",borderRadius:16,overflow:"hidden",boxShadow:"var(--shadow-sm)"}}>
             <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"13px 16px"}}><span style={{fontSize:15,color:"var(--t2)"}}>App</span><span style={{fontSize:15,color:"var(--t1)",fontWeight:500}}>Posology-dev</span></div>
             <div style={{height:"0.5px",background:"var(--sep)"}}/>
-            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"13px 16px"}}><span style={{fontSize:15,color:"var(--t2)"}}>Version</span><span style={{fontSize:15,color:"var(--t1)",fontWeight:500}}>pr-v173</span></div>
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"13px 16px"}}><span style={{fontSize:15,color:"var(--t2)"}}>Version</span><span style={{fontSize:15,color:"var(--t1)",fontWeight:500}}>pr-v174</span></div>
             <div style={{height:"0.5px",background:"var(--sep)"}}/>
             <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"13px 16px"}}><span style={{fontSize:15,color:"var(--t2)"}}>Storage</span><span style={{fontSize:15,color:"var(--t1)",fontWeight:500}}>Supabase</span></div>
           </div>
@@ -1728,7 +1728,7 @@ ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
 </script>
 <script>
 if("serviceWorker"in navigator){
-  const sw='const C="pr-v173",A=[self.location.pathname];self.addEventListener("install",e=>{e.waitUntil(caches.open(C).then(c=>c.addAll(A)));self.skipWaiting();});self.addEventListener("activate",e=>{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==C).map(k=>caches.delete(k)))));self.clients.claim();});self.addEventListener("fetch",e=>{if(e.request.url.includes("supabase.co")){e.respondWith(fetch(e.request));return;}if(e.request.mode==="navigate"){e.respondWith(fetch(e.request).then(res=>{const cl=res.clone();caches.open(C).then(c=>c.put(e.request,cl));return res;}).catch(()=>caches.match(e.request).then(r=>r||caches.match(self.location.pathname))));return;}e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request).then(res=>{const cl=res.clone();caches.open(C).then(c=>c.put(e.request,cl));return res;})));});';
+  const sw='const C="pr-v174",A=[self.location.pathname];self.addEventListener("install",e=>{e.waitUntil(caches.open(C).then(c=>c.addAll(A)));self.skipWaiting();});self.addEventListener("activate",e=>{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==C).map(k=>caches.delete(k)))));self.clients.claim();});self.addEventListener("fetch",e=>{if(e.request.url.includes("supabase.co")){e.respondWith(fetch(e.request));return;}if(e.request.mode==="navigate"){e.respondWith(fetch(e.request).then(res=>{const cl=res.clone();caches.open(C).then(c=>c.put(e.request,cl));return res;}).catch(()=>caches.match(e.request).then(r=>r||caches.match(self.location.pathname))));return;}e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request).then(res=>{const cl=res.clone();caches.open(C).then(c=>c.put(e.request,cl));return res;})));});';
   navigator.serviceWorker.register(URL.createObjectURL(new Blob([sw],{type:"application/javascript"})),{scope:"./"}).catch(e=>console.warn(e));
 }
 </script>
