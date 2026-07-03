@@ -53,6 +53,7 @@ To verify in the Supabase dashboard (cannot be tested from Claude's environment)
 - Today scroll container has class `today-scroll`
 - Nurse chat header: `position:sticky; top:0; zIndex:50`
 - Nurse chat state (`nurseMsgs`) is held in `App`, passed into `HealthAssistant`, so the conversation survives tab switches
+- Root render is wrapped in `ErrorBoundary` (class component, defined before `App`) — render crashes show a reload fallback instead of a blank page
 
 ---
 
