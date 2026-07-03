@@ -63,7 +63,7 @@ Two Supabase Edge Functions proxy the Anthropic API, which keeps the key server-
 - `nurse-chat`: powers the Assistant chat
 - `get-tips`: generates the AI dietary tips, cached by pill-list hash
 
-Both call model `claude-sonnet-4-6`, hardcoded in each function. When a model is retired, the string must be updated on Supabase. Sonnet 4.0 (`claude-sonnet-4-20250514`) retired 2026-06-15 and broke both functions until updated. The source is backed up in this repo under `supabase/functions/`, but the backup does not auto-deploy. Live edits happen on the Supabase dashboard.
+Both call model `claude-sonnet-4-6`, hardcoded in each function. When a model is retired, the string must be updated on Supabase. Sonnet 4.0 (`claude-sonnet-4-20250514`) retired 2026-06-15 and broke both functions until updated. The source is backed up in the prod repo (`cff/pill-reminder`) under `supabase/functions/` — the dev repo does not carry a copy — but the backup does not auto-deploy. Live edits happen on the Supabase dashboard.
 
 **Hardening in place (audit 2026-07):** both functions guard for a missing `ANTHROPIC_API_KEY`, wrap parsing and the upstream fetch in error handling, and restrict CORS to `https://cff.github.io`. `nurse-chat` additionally clamps `max_tokens` server-side, prepends a locked system prefix before any client-supplied `system`, and caps request body size. Any future edit to these functions must preserve all of the above.
 
