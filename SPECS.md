@@ -64,9 +64,7 @@ Two Supabase Edge Functions proxy the Anthropic API, which keeps the key server-
 
 Both call model `claude-sonnet-4-6`, hardcoded in each function. When a model is retired, the string must be updated on Supabase. Sonnet 4.0 (`claude-sonnet-4-20250514`) retired 2026-06-15 and broke both functions until updated. The source is backed up in this repo under `supabase/functions/`, but the backup does not auto-deploy. Live edits happen on the Supabase dashboard.
 
-**Recommended hardening (not yet done):**
-- Guard for a missing `ANTHROPIC_API_KEY` before the API call, so an absent or mistyped key gives a clear error instead of a generic "invalid key" failure.
-- Wrap request parsing and the upstream fetch in error handling, so a malformed request or dropped connection returns a clean error instead of a raw 500.
+**Hardening in place (audit 2026-07):** both functions guard for a missing `ANTHROPIC_API_KEY`, wrap parsing and the upstream fetch in error handling, and restrict CORS to `https://cff.github.io`. `nurse-chat` additionally clamps `max_tokens` server-side, prepends a locked system prefix before any client-supplied `system`, and caps request body size. Any future edit to these functions must preserve all of the above.
 
 ---
 
