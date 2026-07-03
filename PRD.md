@@ -127,6 +127,7 @@ Posology reduces the mental load of managing daily medications. It is the quiet,
 - UC1: User exports JSON backup before reinstalling the PWA
 - UC2: User imports JSON backup after reinstalling
 - UC3: User fills in profile (age, weight) so Nurse has better context
+- Backup schema v2 (2026-07): export/import covers `pr:list`, `pr:archived`, `pr:day:*`, `pr:asneeded:*`, `pr:profile`, `pr:medical-context`, `pr:events`. Any future Supabase key holding user data MUST be added to both export and import in the same commit that introduces it.
 
 ---
 
