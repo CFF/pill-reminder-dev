@@ -131,6 +131,7 @@ When a fix "still doesn't work," resist patching again. Diagnose first.
 - **Dev-only icons:** The splash screen double-pill SVG and the PWA manifest favicon are intentionally different from prod. Do not port them to `cff/pill-reminder`. They exist solely to make dev visually identifiable at a glance.
 - **CSS transforms break `position:fixed` for descendants**, including a transform left behind by an animation's fill mode. Elements that must stay put (Assistant input, scroll button) are portaled to `body` to escape the `fade-up` container
 - **Every Supabase fetch must check `res.ok`.** `fetch` only rejects on network failure, not HTTP errors. A write path that ignores `res.ok` reports success on failure and drops data silently (root cause class of the v57 loss; fixed in `sbSetRemote` during the 2026-07 audit). Any new fetch to Supabase must follow this rule.
+- **Tips cache key must reflect the full pill list.** The `pr:tips:` key hashes the entire `pillsDesc`. An earlier 40-char slice made a dosage change on any non-first medication reuse stale tips (fixed 2026-07 audit). Keep the key derived from the complete description.
 
 ---
 

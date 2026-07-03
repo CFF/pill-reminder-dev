@@ -1088,7 +1088,7 @@ function SettingsView({profile,setProfile,medicalContext,setMedicalContext,pillL
           <div style={{background:"var(--card)",borderRadius:16,overflow:"hidden",boxShadow:"var(--shadow-sm)"}}>
             <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"13px 16px"}}><span style={{fontSize:15,color:"var(--t2)"}}>App</span><span style={{fontSize:15,color:"var(--t1)",fontWeight:500}}>Posology-dev</span></div>
             <div style={{height:"0.5px",background:"var(--sep)"}}/>
-            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"13px 16px"}}><span style={{fontSize:15,color:"var(--t2)"}}>Version</span><span style={{fontSize:15,color:"var(--t1)",fontWeight:500}}>pr-v185</span></div>
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"13px 16px"}}><span style={{fontSize:15,color:"var(--t2)"}}>Version</span><span style={{fontSize:15,color:"var(--t1)",fontWeight:500}}>pr-v186</span></div>
             <div style={{height:"0.5px",background:"var(--sep)"}}/>
             <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"13px 16px"}}><span style={{fontSize:15,color:"var(--t2)"}}>Storage</span><span style={{fontSize:15,color:"var(--t1)",fontWeight:500}}>Supabase</span></div>
           </div>
@@ -1160,7 +1160,7 @@ function App(){
     const allPills=[...(pillList.morning||[]),...(pillList.lunch||[]),...(pillList.evening||[]),...(pillList.as_needed||[])];
     if(allPills.length===0){setTipsLoading(false);return;}
     const pillsDesc=allPills.map(p=>{const doseStr=p.dosageAmt&&p.dosageUnit?`${p.dosageAmt}${p.dosageUnit}`:p.dose||"";return`- ${p.name}${doseStr?` (${doseStr})`:""}`+(p.asNeeded?" [as needed]":"")+(p.maxDailyDose?` max ${p.maxDailyDose}x/day`:"");}).join("\n");
-    const hashKey="pr:tips:"+btoa(unescape(encodeURIComponent(pillsDesc))).slice(0,40);
+    const hashKey="pr:tips:"+btoa(unescape(encodeURIComponent(pillsDesc)));
     try{
       const res=await fetch(`${SUPA_URL}/functions/v1/get-tips`,{method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer "+SUPA_KEY},body:JSON.stringify({pillsDesc})});
       const tips=await res.json();
@@ -1351,7 +1351,7 @@ function App(){
         (p.asNeeded?" [as needed]":"")+
         (p.maxDailyDose?` max ${p.maxDailyDose}x/day`:"");
     }).join("\n");
-    const hashKey="pr:tips:"+btoa(unescape(encodeURIComponent(pillsDesc))).slice(0,40);
+    const hashKey="pr:tips:"+btoa(unescape(encodeURIComponent(pillsDesc)));
     try{
       const cached=await sbGet(hashKey);
       if(cached&&Array.isArray(cached)){const activeNames=allPills.map(p=>p.name.toLowerCase());const filtered=cached.filter(t=>t.label.toLowerCase()==="interactions"||activeNames.some(n=>t.label.toLowerCase().includes(n)||n.includes(t.label.toLowerCase())));if(filtered.length!==cached.length){await sbSet(hashKey,filtered);}setAiTips(filtered);const seenRaw=JSON.parse(localStorage.getItem("pr:seenTipLabels")||"[]");const newLabels=filtered.map(t=>t.label).filter(l=>!seenRaw.includes(l));if(newLabels.length>0){setNewTipLabels(new Set(newLabels));setHasNewTips(true);}else{setHasNewTips(false);}setTipsLoading(false);return;}
@@ -1810,7 +1810,7 @@ ReactDOM.createRoot(document.getElementById("root")).render(<ErrorBoundary><App/
 </script>
 <script>
 if("serviceWorker"in navigator){
-  const sw='const C="pr-v185",A=[self.location.pathname];self.addEventListener("install",e=>{e.waitUntil(caches.open(C).then(c=>c.addAll(A)));self.skipWaiting();});self.addEventListener("activate",e=>{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==C).map(k=>caches.delete(k)))));self.clients.claim();});self.addEventListener("fetch",e=>{if(e.request.url.includes("supabase.co")){e.respondWith(fetch(e.request));return;}if(e.request.mode==="navigate"){e.respondWith(fetch(e.request).then(res=>{const cl=res.clone();caches.open(C).then(c=>c.put(e.request,cl));return res;}).catch(()=>caches.match(e.request).then(r=>r||caches.match(self.location.pathname))));return;}e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request).then(res=>{const cl=res.clone();caches.open(C).then(c=>c.put(e.request,cl));return res;})));});';
+  const sw='const C="pr-v186",A=[self.location.pathname];self.addEventListener("install",e=>{e.waitUntil(caches.open(C).then(c=>c.addAll(A)));self.skipWaiting();});self.addEventListener("activate",e=>{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==C).map(k=>caches.delete(k)))));self.clients.claim();});self.addEventListener("fetch",e=>{if(e.request.url.includes("supabase.co")){e.respondWith(fetch(e.request));return;}if(e.request.mode==="navigate"){e.respondWith(fetch(e.request).then(res=>{const cl=res.clone();caches.open(C).then(c=>c.put(e.request,cl));return res;}).catch(()=>caches.match(e.request).then(r=>r||caches.match(self.location.pathname))));return;}e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request).then(res=>{const cl=res.clone();caches.open(C).then(c=>c.put(e.request,cl));return res;})));});';
   navigator.serviceWorker.register(URL.createObjectURL(new Blob([sw],{type:"application/javascript"})),{scope:"./"}).catch(e=>console.warn(e));
 }
 </script>
