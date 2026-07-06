@@ -131,6 +131,14 @@ Posology reduces the mental load of managing daily medications. It is the quiet,
 
 ---
 
+### 7. Open access via local-first use
+
+**Status: Backlog** — not scheduled. See [PRD-open-access.md](PRD-open-access.md).
+
+**What it does:** Let Claire hand the app to anyone, who then uses Posology fully on their own device with data stored locally (IndexedDB), no account or token. Sidesteps the cloud token's security risks for those users. Reverses the current "Supabase only" storage rule for this mode.
+
+---
+
 ## What is explicitly out of scope (current phase)
 
 - Push notifications / reminders (unresolved: local SW notifications vs external service)
