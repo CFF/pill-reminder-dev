@@ -591,13 +591,15 @@ function asNeededStatus(timestamps,pill){
 const _k1="sk-ant-",_k2="api03-SEHKMjVQKiarWduKxDvAWxqAHLNXUzD4hOUM8919Rcd7vfz5VPaqApJ4e5_naxddNBAFKxmt23Aff3UU-84Fdw-6amcPAAA";
 const HEALTH_ASSISTANT_API_KEY=_k1+_k2;
 
-function HealthAssistant({pillList,profile,medicalContext,setView,onClose,msgs,setMsgs}){
+function HealthAssistant({pillList,profile,medicalContext,setMedicalContext,setView,onClose,msgs,setMsgs}){
   const [input,setInput]=React.useState("");
   const [loading,setLoading]=React.useState(false);
   const [err,setErr]=React.useState(null);
   const [showDown,setShowDown]=React.useState(false);
   const [kb,setKb]=React.useState(0);
   const [contextOpen,setContextOpen]=React.useState(false);
+  const [mcInlineEdit,setMcInlineEdit]=React.useState(false);
+  const [mcDraft,setMcDraft]=React.useState(medicalContext||{});
   const bottomRef=React.useRef(null);
   const inputRef=React.useRef(null);
   const didScroll=React.useRef(false);
@@ -700,31 +702,75 @@ function HealthAssistant({pillList,profile,medicalContext,setView,onClose,msgs,s
       {(()=>{
         const mc=medicalContext||{};
         const filledFields=[mc.conditions,mc.allergies,mc.history,mc.notes].filter(Boolean);
-        const pillsWithReason=(allPills||[]).filter(p=>p.reason);
-        const totalCount=filledFields.length+pillsWithReason.length;
-        if(totalCount===0){
-          return allPills.length>0?(
-            <div style={{padding:"12px 22px 0",fontSize:12.5,color:"var(--t2)",lineHeight:1.4}}>Aware of your treatment: <span style={{color:"var(--t1)",fontWeight:600}}>{pillSummary}</span></div>
-          ):null;
+        const hasMeds=allPills&&allPills.length>0;
+        const STETH=(<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M4.8 2.3A.3.3 0 1 0 5 2H4a2 2 0 0 0-2 2v5a6 6 0 0 0 6 6v0a6 6 0 0 0 6-6V4a2 2 0 0 0-2-2h-1a.2.2 0 1 0 .3.3"/><path d="M8 15v1a6 6 0 0 0 6 6v0a6 6 0 0 0 6-6v-4"/><circle cx="20" cy="10" r="2"/></svg>);
+        async function saveMcField(field,value){
+          const next={...mc,[field]:value};
+          setMedicalContext(next);
+          await window.sbSet("pr:medical-context",next);
         }
-        const summaryLabel=totalCount===1?"1 élément renseigné":totalCount+" éléments renseignés";
         return(
           <div style={{margin:"10px 16px 0",background:"var(--card)",borderRadius:14,boxShadow:"var(--shadow-sm)",overflow:"hidden"}}>
-            <button onClick={()=>setContextOpen(o=>!o)} style={{width:"100%",display:"flex",alignItems:"center",justifyContent:"space-between",padding:"11px 14px",background:"transparent",border:"none",cursor:"pointer",textAlign:"left"}}>
-              <span style={{fontSize:13,fontWeight:600,color:"var(--t2)"}}>Contexte médical</span>
-              <div style={{display:"flex",alignItems:"center",gap:8}}>
-                <span style={{fontSize:12,color:"var(--t3)"}}>{summaryLabel}</span>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--t3)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{transform:contextOpen?"rotate(180deg)":"rotate(0deg)",transition:"transform 0.2s"}}><polyline points="6 9 12 15 18 9"/></svg>
+            <button onClick={()=>{setContextOpen(o=>!o);if(contextOpen)setMcInlineEdit(false);}} style={{width:"100%",display:"flex",alignItems:"center",justifyContent:"space-between",padding:"12px 16px",background:"transparent",border:"none",cursor:"pointer",textAlign:"left"}}>
+              <div>
+                <div style={{fontSize:13,fontWeight:600,color:"var(--t1)"}}>Aware of your treatment</div>
+                {hasMeds&&!contextOpen&&<div style={{fontSize:12,color:"var(--t2)",marginTop:2,lineHeight:1.3}}>{pillSummary}</div>}
               </div>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--t3)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{transform:contextOpen?"rotate(180deg)":"rotate(0deg)",transition:"transform 0.2s",flexShrink:0,marginLeft:8}}><polyline points="6 9 12 15 18 9"/></svg>
             </button>
             {contextOpen&&(
-              <div style={{padding:"0 14px 12px",borderTop:"0.5px solid var(--sep)"}}>
-                {mc.conditions&&<div style={{marginTop:10}}><span style={{fontSize:11,fontWeight:600,color:"var(--t3)",textTransform:"uppercase",letterSpacing:"0.06em"}}>Conditions</span><p style={{margin:"3px 0 0",fontSize:13.5,color:"var(--t1)",lineHeight:1.5}}>{mc.conditions}</p></div>}
-                {mc.allergies&&<div style={{marginTop:10}}><span style={{fontSize:11,fontWeight:600,color:"var(--t3)",textTransform:"uppercase",letterSpacing:"0.06em"}}>Allergies</span><p style={{margin:"3px 0 0",fontSize:13.5,color:"var(--t1)",lineHeight:1.5}}>{mc.allergies}</p></div>}
-                {mc.history&&<div style={{marginTop:10}}><span style={{fontSize:11,fontWeight:600,color:"var(--t3)",textTransform:"uppercase",letterSpacing:"0.06em"}}>Antécédents</span><p style={{margin:"3px 0 0",fontSize:13.5,color:"var(--t1)",lineHeight:1.5}}>{mc.history}</p></div>}
-                {mc.notes&&<div style={{marginTop:10}}><span style={{fontSize:11,fontWeight:600,color:"var(--t3)",textTransform:"uppercase",letterSpacing:"0.06em"}}>Notes</span><p style={{margin:"3px 0 0",fontSize:13.5,color:"var(--t1)",lineHeight:1.5}}>{mc.notes}</p></div>}
-                {pillsWithReason.length>0&&<div style={{marginTop:10}}><span style={{fontSize:11,fontWeight:600,color:"var(--t3)",textTransform:"uppercase",letterSpacing:"0.06em"}}>Médicaments</span>{pillsWithReason.map(p=><p key={p.id} style={{margin:"3px 0 0",fontSize:13.5,color:"var(--t1)",lineHeight:1.5}}>{p.name}{p.dose?" "+p.dose:""} — {p.reason}</p>)}</div>}
-                <button onClick={()=>setView("settings")} style={{marginTop:8,background:"none",border:"none",padding:"10px 0",fontSize:13,color:"var(--acc)",cursor:"pointer",fontWeight:500,display:"block"}}>Modifier</button>
+              <div style={{borderTop:"0.5px solid var(--sep)"}}>
+                {hasMeds&&(
+                  <div style={{padding:"10px 16px 12px"}}>
+                    <div style={{fontSize:10,fontWeight:600,color:"var(--t3)",textTransform:"uppercase",letterSpacing:"0.07em",marginBottom:6}}>Active medications</div>
+                    {allPills.map(p=>(
+                      <div key={p.id} style={{display:"flex",alignItems:"center",gap:7,padding:"2px 0"}}>
+                        <div style={{width:5,height:5,borderRadius:"50%",background:"var(--acc)",flexShrink:0}}/>
+                        <span style={{fontSize:13,color:"var(--t1)",fontWeight:500}}>{p.name}</span>
+                        {p.dose&&<span style={{fontSize:12,color:"var(--t2)"}}>{p.dose}</span>}
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <div style={{borderTop:hasMeds?"0.5px solid var(--sep)":"none",padding:"10px 16px 12px"}}>
+                  <div style={{fontSize:10,fontWeight:600,color:"var(--t3)",textTransform:"uppercase",letterSpacing:"0.07em",marginBottom:6}}>Medical context</div>
+                  {mcInlineEdit?(
+                    <div>
+                      {[{field:"conditions",label:"Chronic conditions",placeholder:"e.g. type 2 diabetes, hypertension…",maxLen:300},{field:"allergies",label:"Allergies",placeholder:"e.g. penicillin, aspirin…",maxLen:200},{field:"history",label:"History",placeholder:"e.g. cardiac surgery 2019…",maxLen:300},{field:"notes",label:"Notes",placeholder:"Any other info that helps…",maxLen:500}].map(({field,label,placeholder,maxLen},i)=>(
+                        <div key={field} style={{marginTop:i>0?10:0}}>
+                          <div style={{fontSize:10,color:"var(--t3)",textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:3}}>{label}</div>
+                          <textarea
+                            value={mcDraft[field]||""}
+                            placeholder={placeholder}
+                            maxLength={maxLen}
+                            rows={1}
+                            onChange={e=>{const v=e.target.value;setMcDraft(prev=>({...prev,[field]:v}));e.target.style.height="auto";e.target.style.height=e.target.scrollHeight+"px";}}
+                            onBlur={e=>saveMcField(field,e.target.value)}
+                            className="mc-textarea"
+                            style={{width:"100%",border:"none",borderRadius:8,background:"var(--bg)",color:"var(--t1)",fontSize:13.5,resize:"none",outline:"none",lineHeight:1.5,padding:"6px 8px",fontFamily:"inherit",overflow:"hidden",boxSizing:"border-box"}}
+                          />
+                        </div>
+                      ))}
+                      <button onClick={()=>setMcInlineEdit(false)} style={{marginTop:10,background:"var(--acc)",color:"#fff",border:"none",borderRadius:10,padding:"8px 18px",fontSize:13,fontWeight:600,cursor:"pointer"}}>Done</button>
+                    </div>
+                  ):filledFields.length>0?(
+                    <div>
+                      {mc.conditions&&<div style={{marginBottom:6}}><div style={{fontSize:10,color:"var(--t3)",textTransform:"uppercase",letterSpacing:"0.06em"}}>Conditions</div><p style={{margin:"2px 0 0",fontSize:13.5,color:"var(--t1)",lineHeight:1.5}}>{mc.conditions}</p></div>}
+                      {mc.allergies&&<div style={{marginBottom:6}}><div style={{fontSize:10,color:"var(--t3)",textTransform:"uppercase",letterSpacing:"0.06em"}}>Allergies</div><p style={{margin:"2px 0 0",fontSize:13.5,color:"var(--t1)",lineHeight:1.5}}>{mc.allergies}</p></div>}
+                      {mc.history&&<div style={{marginBottom:6}}><div style={{fontSize:10,color:"var(--t3)",textTransform:"uppercase",letterSpacing:"0.06em"}}>History</div><p style={{margin:"2px 0 0",fontSize:13.5,color:"var(--t1)",lineHeight:1.5}}>{mc.history}</p></div>}
+                      {mc.notes&&<div style={{marginBottom:6}}><div style={{fontSize:10,color:"var(--t3)",textTransform:"uppercase",letterSpacing:"0.06em"}}>Notes</div><p style={{margin:"2px 0 0",fontSize:13.5,color:"var(--t1)",lineHeight:1.5}}>{mc.notes}</p></div>}
+                      <button onClick={()=>{setMcDraft(mc);setMcInlineEdit(true);}} style={{marginTop:4,background:"none",border:"none",padding:"6px 0",fontSize:13,color:"var(--acc)",cursor:"pointer",fontWeight:500}}>Edit</button>
+                    </div>
+                  ):(
+                    <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"2px 0"}}>
+                      <div style={{display:"flex",alignItems:"center",gap:7,color:"var(--t2)"}}>
+                        {STETH}
+                        <span style={{fontSize:13}}>No medical context</span>
+                      </div>
+                      <button onClick={()=>{setMcDraft(mc);setMcInlineEdit(true);}} style={{background:"none",border:"none",padding:"4px 0",fontSize:13,color:"var(--acc)",cursor:"pointer",fontWeight:500}}>Add</button>
+                    </div>
+                  )}
+                </div>
               </div>
             )}
           </div>
@@ -1085,7 +1131,7 @@ function SettingsView({profile,setProfile,medicalContext,setMedicalContext,pillL
           <div style={{background:"var(--card)",borderRadius:16,overflow:"hidden",boxShadow:"var(--shadow-sm)"}}>
             <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"13px 16px"}}><span style={{fontSize:15,color:"var(--t2)"}}>App</span><span style={{fontSize:15,color:"var(--t1)",fontWeight:500}}>Posology-dev</span></div>
             <div style={{height:"0.5px",background:"var(--sep)"}}/>
-            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"13px 16px"}}><span style={{fontSize:15,color:"var(--t2)"}}>Version</span><span style={{fontSize:15,color:"var(--t1)",fontWeight:500}}>pr-v189</span></div>
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"13px 16px"}}><span style={{fontSize:15,color:"var(--t2)"}}>Version</span><span style={{fontSize:15,color:"var(--t1)",fontWeight:500}}>pr-v190</span></div>
             <div style={{height:"0.5px",background:"var(--sep)"}}/>
             <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"13px 16px"}}><span style={{fontSize:15,color:"var(--t2)"}}>Storage</span><span style={{fontSize:15,color:"var(--t1)",fontWeight:500}}>Supabase</span></div>
           </div>
@@ -1451,7 +1497,7 @@ function App(){
   if(!USER_TOKEN)return <NoTokenView/>;
   if(view==="history")return(<><HistoryView view={view} setView={setView} selectedDay={selectedDay} setSelectedDay={setSelectedDay} history={history} setHistory={setHistory} pillList={pillList} archived={archived} sessions={sessions} toggleHistoryTaken={toggleHistoryTaken} storedEvents={storedEvents}/><TabBar view={view} setView={setView} setSelectedDay={setSelectedDay} hasNewTips={false}/></>);
   if(view==="settings")return(<><SettingsView view={view} setView={setView} setSelectedDay={setSelectedDay} profile={profile} setProfile={setProfile} medicalContext={medicalContext} setMedicalContext={setMedicalContext} pillList={pillList} archived={archived} setPillList={setPillList} setArchived={setArchived} fileInputRef={fileInputRef}/><TabBar view={view} setView={setView} setSelectedDay={setSelectedDay} hasNewTips={false}/></>);
-  if(view==="nurse")return(<><TabBar view={view} setView={setView} setSelectedDay={setSelectedDay} hasNewTips={false}/><HealthAssistant pillList={pillList} profile={profile} medicalContext={medicalContext} setView={setView} msgs={nurseMsgs} setMsgs={setNurseMsgs}/></>);
+  if(view==="nurse")return(<><TabBar view={view} setView={setView} setSelectedDay={setSelectedDay} hasNewTips={false}/><HealthAssistant pillList={pillList} profile={profile} medicalContext={medicalContext} setMedicalContext={setMedicalContext} setView={setView} msgs={nurseMsgs} setMsgs={setNurseMsgs}/></>);
 
   const total=sessions.reduce((s,{key})=>s+getPillsForSession(pillList,key).length,0);
   const taken=sessions.reduce((s,{key})=>{const p=getPillsForSession(pillList,key),l=todayLog[key]||{};return s+p.filter(x=>l[x.id]).length;},0);
@@ -1808,7 +1854,7 @@ ReactDOM.createRoot(document.getElementById("root")).render(<ErrorBoundary><App/
 </script>
 <script>
 if("serviceWorker"in navigator){
-  const sw='const C="pr-v189",A=[self.location.pathname];self.addEventListener("install",e=>{e.waitUntil(caches.open(C).then(c=>c.addAll(A)));self.skipWaiting();});self.addEventListener("activate",e=>{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==C).map(k=>caches.delete(k)))));self.clients.claim();});self.addEventListener("fetch",e=>{if(e.request.url.includes("supabase.co")){e.respondWith(fetch(e.request));return;}if(e.request.mode==="navigate"){e.respondWith(fetch(e.request).then(res=>{const cl=res.clone();caches.open(C).then(c=>c.put(e.request,cl));return res;}).catch(()=>caches.match(e.request).then(r=>r||caches.match(self.location.pathname))));return;}e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request).then(res=>{const cl=res.clone();caches.open(C).then(c=>c.put(e.request,cl));return res;})));});';
+  const sw='const C="pr-v190",A=[self.location.pathname];self.addEventListener("install",e=>{e.waitUntil(caches.open(C).then(c=>c.addAll(A)));self.skipWaiting();});self.addEventListener("activate",e=>{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==C).map(k=>caches.delete(k)))));self.clients.claim();});self.addEventListener("fetch",e=>{if(e.request.url.includes("supabase.co")){e.respondWith(fetch(e.request));return;}if(e.request.mode==="navigate"){e.respondWith(fetch(e.request).then(res=>{const cl=res.clone();caches.open(C).then(c=>c.put(e.request,cl));return res;}).catch(()=>caches.match(e.request).then(r=>r||caches.match(self.location.pathname))));return;}e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request).then(res=>{const cl=res.clone();caches.open(C).then(c=>c.put(e.request,cl));return res;})));});';
   navigator.serviceWorker.register(URL.createObjectURL(new Blob([sw],{type:"application/javascript"})),{scope:"./"}).catch(e=>console.warn(e));
 }
 </script>
