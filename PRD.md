@@ -18,7 +18,7 @@ Posology reduces the mental load of managing daily medications. It is the quiet,
 | Secondary | Lysiane — shared user, lighter usage, receives a pre-configured link |
 | Future | Small open user base via personal URL tokens |
 
-**Access model:** URL token (`?u=name`). No password, no registration. Sharing the URL = sharing access. Appropriate for trusted personal use; not appropriate for sensitive clinical data.
+**Access model:** URL token (`?u=name-XXXXXXXXXX`), a high-entropy, non-guessable token that is the user's namespace. No password, no registration. Since the 2026-07 lockdown, the `data` table cannot be read with the public key — access is only through token-scoped database functions — so the medication and medical-context data can no longer be dumped from the table, and tokens can no longer be guessed. What is **not** protected: anyone who obtains a valid link has full access to that namespace (the link is the key). Removing that would require real per-user login, which is out of scope. First-name tokens are deprecated; issue only high-entropy ones.
 
 ---
 

@@ -17,14 +17,16 @@ Pure technical reference. How the app is built. For behavioral rules and commit 
 
 - **Supabase project:** `https://fotzkqkghxndjnomrspr.supabase.co`
 - **Anon key:** embedded in `index.html` (public by design)
-- **Access:** `?u=username` URL param. The token is the namespace, no auth or registration required
+- **Access:** `?u=name-XXXXXXXXXX` URL param (high-entropy token). The token is the namespace; no auth or registration
 - **KV schema:** `(user_token, key, value jsonb)`
 - **Upserts:** must use `Prefer: resolution=merge-duplicates`
 - **SW fetch handler:** must bypass cache for all `supabase.co` requests
 
-**Token setup for new users:** share `https://cff.github.io/pill-reminder/?u=theirname`. The Supabase namespace is created automatically on first write. Nothing to configure in Supabase.
+**Token setup for new users:** generate a high-entropy token (`name-XXXXXXXXXX`, 10 random chars) and share `https://cff.github.io/pill-reminder/?u=<that token>`. The namespace is created on first write. Do not issue guessable first-name tokens.
 
-To verify in the Supabase dashboard (cannot be tested from Claude's environment): UNIQUE constraint on `(user_token, key)`, and Row Level Security policies filter by token.
+**Access path (locked, 2026-07):** the `data` table is not directly reachable with the anon key. All reads and writes go through `SECURITY DEFINER` functions, each scoped to the token passed in: `get_one(p_token, p_key)`, `get_prefix(p_token, p_prefix)`, `set_one(p_token, p_key, p_value)`. Direct anon `SELECT/INSERT/UPDATE` on `public.data` is revoked and RLS is enabled, so `/rest/v1/data` returns permission-denied to the public key. Never query the table directly — use or extend these functions.
+
+Dashboard checks (cannot be tested from Claude's environment): UNIQUE constraint on `(user_token, key)` still required for upserts; a dump attempt with the anon key (`GET /rest/v1/data`) must return permission-denied.
 
 ---
 

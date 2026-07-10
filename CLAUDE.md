@@ -132,6 +132,7 @@ When a fix "still doesn't work," resist patching again. Diagnose first.
 - **CSS transforms break `position:fixed` for descendants**, including a transform left behind by an animation's fill mode. Elements that must stay put (Assistant input, scroll button) are portaled to `body` to escape the `fade-up` container
 - **Every Supabase fetch must check `res.ok`.** `fetch` only rejects on network failure, not HTTP errors. A write path that ignores `res.ok` reports success on failure and drops data silently (root cause class of the v57 loss; fixed in `sbSetRemote` during the 2026-07 audit). Any new fetch to Supabase must follow this rule.
 - **Tips cache key must reflect the full pill list.** The `pr:tips:` key hashes the entire `pillsDesc`. An earlier 40-char slice made a dosage change on any non-first medication reuse stale tips (fixed 2026-07 audit). Keep the key derived from the complete description.
+- **All Supabase access goes through RPC, never the table.** `get_one` / `get_prefix` / `set_one` are the only anon-reachable path; direct anon access to `public.data` was revoked in the 2026-07 lockdown. Any new read or write must use these functions — a direct `/rest/v1/data` call now fails with permission-denied. Adding a new stored key needs no schema change, but never reintroduce a direct table fetch.
 
 ---
 
