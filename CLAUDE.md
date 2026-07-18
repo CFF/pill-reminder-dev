@@ -123,6 +123,8 @@ When a fix "still doesn't work," resist patching again. Diagnose first.
 
 ## Known gotchas
 
+- **Nurse chat does not survive reload.** `nurseMsgs` is `useState([])` in `App`, never read from or written to Supabase/localStorage. Survives tab switches (App never unmounts) but a PWA reload or relaunch loses the conversation. Expected behavior per Claire: history should persist as long as the app is installed, so this is a real bug, not a design choice. Fix requires persisting `nurseMsgs` to a Supabase key on every update and loading it in `loadData()`. Tracked in PRD-nurse.md and the audit cockpit.
+
 - **Babel hooks rules:** no hooks after conditional returns, no components defined inside `App`
 - **`overflow:hidden` clips dropdowns:** use `ReactDOM.createPortal`
 - **GitHub Secret Scanning** blocks `sk-ant-api03-*` even in comments. Anthropic key lives in Supabase secrets only
