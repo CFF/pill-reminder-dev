@@ -32,7 +32,7 @@ Each row is the canonical source of truth for that feature's behavioral contract
 | 2 | As-needed medications | [PRD-as-needed.md](PRD-as-needed.md) | Documented |
 | 3 | History | [PRD-history.md](PRD-history.md) | Documented |
 | 4 | AI Recommendations (tips) | — | Summary below only |
-| 5 | Nurse (AI chat) | [PRD-medical-context.md](PRD-medical-context.md) | Medical context documented; chat behavior summary only |
+| 5 | Nurse (AI chat) | [PRD-nurse.md](PRD-nurse.md), [PRD-medical-context.md](PRD-medical-context.md) | Documented — known bug: chat lost on reload |
 | 6 | Settings | — | Summary below only |
 | 7 | Open access (local-first) | [PRD-open-access.md](PRD-open-access.md) | Backlog, not scheduled |
 | — | Pill management (add/edit/versioning/scan/autocomplete) | [PRD-pill-management.md](PRD-pill-management.md) | Documented |
