@@ -22,6 +22,23 @@ Posology reduces the mental load of managing daily medications. It is the quiet,
 
 ---
 
+## Feature registry
+
+Each row is the canonical source of truth for that feature's behavioral contracts. If a feature file exists, it supersedes the summary below for that feature.
+
+| # | Feature | File | Status |
+|---|---|---|---|
+| 1 | Scheduled sessions | — | Summary below only |
+| 2 | As-needed medications | [PRD-as-needed.md](PRD-as-needed.md) | Documented |
+| 3 | History | — | Summary below only, known stale (UC3) |
+| 4 | AI Recommendations (tips) | — | Summary below only |
+| 5 | Nurse (AI chat) | [PRD-medical-context.md](PRD-medical-context.md) | Medical context documented; chat behavior summary only |
+| 6 | Settings | — | Summary below only |
+| 7 | Open access (local-first) | [PRD-open-access.md](PRD-open-access.md) | Backlog, not scheduled |
+| — | Pill management (add/edit/versioning/scan/autocomplete) | — | Undocumented, in progress |
+
+---
+
 ## Features
 
 ### 1. Scheduled sessions (Morning / Lunch / Evening)
