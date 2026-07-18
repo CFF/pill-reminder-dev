@@ -31,7 +31,7 @@ Each row is the canonical source of truth for that feature's behavioral contract
 | 1 | Scheduled sessions | — | Summary below only |
 | 2 | As-needed medications | [PRD-as-needed.md](PRD-as-needed.md) | Documented |
 | 3 | History | [PRD-history.md](PRD-history.md) | Documented |
-| 4 | AI Recommendations (tips) | — | Summary below only |
+| 4 | AI Recommendations (tips) | [PRD-tips.md](PRD-tips.md) | Documented |
 | 5 | Nurse (AI chat) | [PRD-nurse.md](PRD-nurse.md), [PRD-medical-context.md](PRD-medical-context.md) | Documented — known bug: chat lost on reload |
 | 6 | Settings | — | Summary below only |
 | 7 | Open access (local-first) | [PRD-open-access.md](PRD-open-access.md) | Backlog, not scheduled |
