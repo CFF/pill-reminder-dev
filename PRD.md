@@ -35,7 +35,7 @@ Each row is the canonical source of truth for that feature's behavioral contract
 | 5 | Nurse (AI chat) | [PRD-medical-context.md](PRD-medical-context.md) | Medical context documented; chat behavior summary only |
 | 6 | Settings | — | Summary below only |
 | 7 | Open access (local-first) | [PRD-open-access.md](PRD-open-access.md) | Backlog, not scheduled |
-| — | Pill management (add/edit/versioning/scan/autocomplete) | — | Undocumented, in progress |
+| — | Pill management (add/edit/versioning/scan/autocomplete) | [PRD-pill-management.md](PRD-pill-management.md) | Documented |
 
 ---
 
