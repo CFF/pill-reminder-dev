@@ -562,7 +562,7 @@ function buildActivePillsForDate(date,pillList,archived){
 }
 
 function dayScore(log,list,archived,date){
-  if(!log)return{pct:0,taken:0,total:0};
+  log=log||{};
   const pills=date?buildActivePillsForDate(date,list,archived):[...(list.morning||[]).map(p=>({...p,session:"morning"})),...(list.lunch||[]).map(p=>({...p,session:"lunch"})),...(list.evening||[]).map(p=>({...p,session:"evening"}))];
   const t=pills.length,k=pills.filter(p=>log[p.session]?.[p.id]).length;
   return{pct:t?Math.round(k/t*100):0,taken:k,total:t};
@@ -865,7 +865,10 @@ function HistoryView({view,setView,selectedDay,setSelectedDay,history,setHistory
   async function loadAll(){
     setLoadingMore(true);
     const rows=await sbGetAllDayKeys("pr:day:");
-    const all=rows.map(r=>({date:r.key.replace("pr:day:",""),log:r.value})).filter(r=>r.log!==null).sort((a,b)=>b.date.localeCompare(a.date));
+    const all=rows.map(r=>({date:r.key.replace("pr:day:",""),log:r.value})).filter(r=>r.log!==null);
+    const seenDates=new Set(all.map(r=>r.date));
+    for(const d of getLast30Days())if(!seenDates.has(d))all.push({date:d,log:null});
+    all.sort((a,b)=>b.date.localeCompare(a.date));
     setHistory(all);
     setShowingAll(true);
     setLoadingMore(false);
@@ -947,11 +950,12 @@ function HistoryView({view,setView,selectedDay,setSelectedDay,history,setHistory
                   const dayEvents=eventsByDate[date]||[];
                   const elements=[];
                   // Day row first
-                  if(histEntry){
+                  const actv=histEntry?buildActivePillsForDate(date,pillList,archived):[];
+                  if(histEntry&&(histEntry.log||actv.length>0)){
                     const{pct,taken:tk,total:tt}=dayScore(histEntry.log,pillList,archived,date);
                     const isToday=date===todayStr(),col=pct===100?"var(--green)":pct>=50?"var(--acc)":"var(--red)",C=2*Math.PI*13;
                     const isFirst=rowIndex===0;rowIndex++;
-                    const activePillsForDots=buildActivePillsForDate(date,pillList,archived);
+                    const activePillsForDots=actv;
                     elements.push(<GroupRow key={date} first={isFirst} onClick={()=>setSelectedDay(date)}>
                       <div style={{display:"flex",alignItems:"center",gap:13,padding:"13px 16px"}}>
                         <div style={{position:"relative",width:32,height:32,flexShrink:0}}>
@@ -1088,7 +1092,7 @@ function SettingsView({profile,setProfile,medicalContext,setMedicalContext,pillL
           <div style={{background:"var(--card)",borderRadius:16,overflow:"hidden",boxShadow:"var(--shadow-sm)"}}>
             <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"13px 16px"}}><span style={{fontSize:15,color:"var(--t2)"}}>App</span><span style={{fontSize:15,color:"var(--t1)",fontWeight:500}}>Posology-dev</span></div>
             <div style={{height:"0.5px",background:"var(--sep)"}}/>
-            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"13px 16px"}}><span style={{fontSize:15,color:"var(--t2)"}}>Version</span><span style={{fontSize:15,color:"var(--t1)",fontWeight:500}}>pr-v194</span></div>
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"13px 16px"}}><span style={{fontSize:15,color:"var(--t2)"}}>Version</span><span style={{fontSize:15,color:"var(--t1)",fontWeight:500}}>pr-v195</span></div>
             <div style={{height:"0.5px",background:"var(--sep)"}}/>
             <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"13px 16px"}}><span style={{fontSize:15,color:"var(--t2)"}}>Storage</span><span style={{fontSize:15,color:"var(--t1)",fontWeight:500}}>Supabase</span></div>
           </div>
@@ -1288,7 +1292,7 @@ function App(){
   const loadHistory=useCallback(async()=>{
     const days=getLast30Days();
     const results=await Promise.all(days.map(async d=>({date:d,log:await sbGet(dayKey(d))})));
-    setHistory(results.filter(r=>r.log!==null));
+    setHistory(results);
   },[]);
   useEffect(()=>{if(view==="history")loadHistory();},[view,loadHistory]);
   const VIEWS=["today","history","nurse","settings"];
@@ -1811,7 +1815,7 @@ ReactDOM.createRoot(document.getElementById("root")).render(<ErrorBoundary><App/
 </script>
 <script>
 if("serviceWorker"in navigator){
-  const sw='const C="pr-v194",A=[self.location.pathname];self.addEventListener("install",e=>{e.waitUntil(caches.open(C).then(c=>c.addAll(A)));self.skipWaiting();});self.addEventListener("activate",e=>{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==C).map(k=>caches.delete(k)))));self.clients.claim();});self.addEventListener("fetch",e=>{if(e.request.url.includes("supabase.co")){e.respondWith(fetch(e.request));return;}if(e.request.mode==="navigate"){e.respondWith(fetch(e.request).then(res=>{const cl=res.clone();caches.open(C).then(c=>c.put(e.request,cl));return res;}).catch(()=>caches.match(e.request).then(r=>r||caches.match(self.location.pathname))));return;}e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request).then(res=>{const cl=res.clone();caches.open(C).then(c=>c.put(e.request,cl));return res;})));});';
+  const sw='const C="pr-v195",A=[self.location.pathname];self.addEventListener("install",e=>{e.waitUntil(caches.open(C).then(c=>c.addAll(A)));self.skipWaiting();});self.addEventListener("activate",e=>{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==C).map(k=>caches.delete(k)))));self.clients.claim();});self.addEventListener("fetch",e=>{if(e.request.url.includes("supabase.co")){e.respondWith(fetch(e.request));return;}if(e.request.mode==="navigate"){e.respondWith(fetch(e.request).then(res=>{const cl=res.clone();caches.open(C).then(c=>c.put(e.request,cl));return res;}).catch(()=>caches.match(e.request).then(r=>r||caches.match(self.location.pathname))));return;}e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request).then(res=>{const cl=res.clone();caches.open(C).then(c=>c.put(e.request,cl));return res;})));});';
   navigator.serviceWorker.register(URL.createObjectURL(new Blob([sw],{type:"application/javascript"})),{scope:"./"}).catch(e=>console.warn(e));
 }
 </script>
